@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="数字小英雄">
+<meta name="theme-color" content="#8ed1ff">
+<title>数字小英雄</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+<style>
+/* ============ RESET / BASE ============ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html,body{height:100%;overflow:hidden;touch-action:manipulation}
+body{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;font-family:ui-rounded,-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#8ed1ff;color:#4a3728}
+img{-webkit-user-drag:none;pointer-events:none}
+button{font-family:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation;color:inherit}
+
+/* ============ SCENES ============ */
+.scene{position:absolute;inset:0;display:none;overflow:hidden}
+.scene.on{display:block}
+.bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.layer{position:absolute;inset:0;z-index:1}
+
+/* ============ BOOT ============ */
+#sceneBoot{background:linear-gradient(#aee3ff,#e8f7ff 55%,#d3f2d9)}
+.boot-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vmin;z-index:1}
+.boot-title{font-size:9vmin;font-weight:900;color:#ff8c42;text-shadow:0 .8vmin 0 #fff,0 1.2vmin 2vmin rgba(120,80,0,.25);letter-spacing:.5vmin}
+.boot-chars{display:flex;align-items:flex-end;gap:2vmin;height:26vmin}
+.boot-chars img{height:100%;width:auto;animation:idlebob 2.6s ease-in-out infinite}
+.boot-chars img:nth-child(2){animation-delay:.4s}.boot-chars img:nth-child(3){animation-delay:.8s}.boot-chars img:nth-child(4){animation-delay:1.2s}
+#btnStart{width:34vmin;height:34vmin;min-width:150px;min-height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd977,#ff9f1c 70%);box-shadow:0 1.5vmin 0 #d97c00,0 2.5vmin 4vmin rgba(160,90,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:pulse 1.6s ease-in-out infinite}
+#btnStart:active{transform:scale(.92)}
+#btnStart .tri{width:0;height:0;border-top:5vmin solid transparent;border-bottom:5vmin solid transparent;border-left:8.5vmin solid #fff;margin-left:2vmin;filter:drop-shadow(0 .6vmin 0 rgba(180,100,0,.4))}
+#btnStart .lbl{font-size:4.6vmin;font-weight:900;color:#fff;margin-top:1vmin;text-shadow:0 .4vmin 0 rgba(180,100,0,.4)}
+
+/* ============ MAP ============ */
+.map-grid{position:absolute;inset:0;padding:max(9vmin,env(safe-area-inset-top)) 4vmin max(4vmin,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:1.5vmin;z-index:1}
+@media (orientation:portrait){.map-grid{grid-template-columns:repeat(2,1fr)}}
+.island{position:relative;display:flex;align-items:center;justify-content:center;border-radius:4vmin;transition:transform .15s}
+.island:active{transform:scale(.93)}
+.island .isl{width:min(100%,32vmin);height:auto}
+.island .ihost{position:absolute;width:38%;left:50%;top:2%;transform:translateX(-50%);animation:idlebob 3s ease-in-out infinite}
+.island .iname{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.88);border-radius:3vmin;padding:.6vmin 2.2vmin;font-size:2.8vmin;font-weight:900;color:#7a5b2e;box-shadow:0 .5vmin 1.5vmin rgba(90,60,0,.18);white-space:nowrap}
+
+/* ============ HUD ============ */
+.hud{position:absolute;z-index:30;display:flex;align-items:center;gap:1vmin}
+#hudStars{top:max(2vmin,env(safe-area-inset-top));right:max(2.4vmin,env(safe-area-inset-right));background:rgba(255,255,255,.9);border-radius:5vmin;padding:1vmin 2.4vmin 1vmin 1.2vmin;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.2);z-index:70}
+body[data-scene="sceneBoot"] #hudStars{display:none}
+#hudStars img{width:5.6vmin;height:5.6vmin;min-width:34px;min-height:34px}
+#hudStars span{font-size:4.6vmin;font-weight:900;color:#f59f00}
+#btnHome{top:max(2vmin,env(safe-area-inset-top));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:88px;min-height:88px;border-radius:50%;background:rgba(255,255,255,.6);font-size:5vmin;box-shadow:0 .5vmin 1.5vmin rgba(90,60,0,.15);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
+#btnHome.armed{background:#ffe066;transform:scale(1.15)}
+#btnReplay{bottom:max(2.4vmin,env(safe-area-inset-bottom));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:64px;min-height:64px;border-radius:50%;background:rgba(255,255,255,.9);font-size:5.6vmin;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.25);display:flex;align-items:center;justify-content:center;z-index:30;position:absolute}
+#btnReplay:active,#btnHome:active{transform:scale(.9)}
+#dots{top:max(2.6vmin,env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+#dots i{display:block;width:2.6vmin;height:2.6vmin;min-width:14px;min-height:14px;border-radius:50%;background:rgba(255,255,255,.6);border:.4vmin solid rgba(255,255,255,.9)}
+#dots i.done{background:#ffc94d;border-color:#fff}
+#gearMap{position:absolute;bottom:max(1.6vmin,env(safe-area-inset-bottom));right:max(1.6vmin,env(safe-area-inset-right));width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.35);font-size:24px;z-index:30;display:flex;align-items:center;justify-content:center;opacity:.65}
+#gearRing{position:absolute;inset:-4px;border-radius:50%;border:4px solid transparent;pointer-events:none}
+#gearRing.arming{border-color:#ff9f1c;animation:spinring 3s linear}
+
+/* ============ PLAY STAGE ============ */
+#stage{position:absolute;inset:0;z-index:1}
+.hostbox{position:absolute;right:2%;bottom:24%;width:30vmin;display:flex;flex-direction:column;align-items:center;z-index:5}
+.hostbox img.host{width:100%;height:auto;filter:drop-shadow(0 1vmin 2vmin rgba(60,40,0,.25))}
+.hostbox.talking img.host{animation:talkbob .5s ease-in-out infinite}
+.hostbox .hname{background:rgba(255,255,255,.85);border-radius:3vmin;padding:.4vmin 2vmin;font-size:2.6vmin;font-weight:800;color:#7a5b2e;margin-top:.6vmin}
+@media (orientation:portrait){.hostbox{width:26vmin;right:3%;bottom:auto;top:12%}}
+.field{position:absolute;left:3%;right:34%;top:14%;bottom:26%;z-index:4}
+@media (orientation:portrait){.field{left:4%;right:4%;top:30%;bottom:30%}}
+.item{position:absolute;width:14vmin;height:14vmin;min-width:88px;min-height:88px;transform:translate(-50%,-50%);transition:transform .18s,filter .18s}
+.item img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 .8vmin 1.2vmin rgba(60,40,0,.22))}
+.item.counted img{filter:drop-shadow(0 0 2.2vmin rgba(255,200,40,.95)) brightness(1.08)}
+.item.counted{transform:translate(-50%,-50%) scale(1.12)}
+.item.dim{opacity:.35}
+.item:active{transform:translate(-50%,-50%) scale(.9)}
+.cbadge{position:absolute;top:-3.4vmin;left:50%;transform:translateX(-50%);background:#ff6b6b;color:#fff;font-weight:900;font-size:3.6vmin;min-width:5.4vmin;height:5.4vmin;border-radius:50%;display:flex;align-items:center;justify-content:center;border:.5vmin solid #fff;box-shadow:0 .4vmin 1vmin rgba(120,0,0,.3);animation:popin .25s}
+.hl{animation:hlflash .55s ease-in-out}
+
+/* answer cards */
+.cards{position:absolute;left:50%;bottom:max(3vmin,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:3vmin;z-index:20}
+.ncard{width:17vmin;height:19vmin;min-width:96px;min-height:104px;background:#fff;border-radius:3.4vmin;border-bottom:1.2vmin solid #e0cfa8;box-shadow:0 1vmin 2.6vmin rgba(90,60,0,.22);font-size:11vmin;font-weight:900;color:#4a90d9;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.ncard:active{transform:scale(.9)}
+.ncard.dim{opacity:.4}
+.ncard.right{background:#d3f9d8;color:#2f9e44;border-bottom-color:#8ce99a}
+
+/* balloons */
+.balloon{position:absolute;width:19vmin;height:22vmin;min-width:100px;min-height:116px;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;border-radius:50% 50% 48% 48%;font-size:11.5vmin;font-weight:900;color:#fff;text-shadow:0 .5vmin 0 rgba(0,0,0,.18);box-shadow:inset -1.6vmin -2vmin 0 rgba(0,0,0,.08),0 1vmin 2.4vmin rgba(60,40,0,.2);animation:floaty 3.8s ease-in-out infinite}
+.balloon::after{content:"";position:absolute;bottom:-3.4vmin;left:50%;transform:translateX(-50%);width:.5vmin;height:3.6vmin;background:rgba(255,255,255,.75);border-radius:1vmin}
+.balloon.popped{animation:balloonpop .4s forwards}
+.balloon.shake{animation:wiggle .5s}
+
+/* feed */
+.tray{position:absolute;left:3%;bottom:max(3vmin,env(safe-area-inset-bottom));width:56%;display:flex;flex-wrap:wrap;gap:1.6vmin;align-items:center;justify-content:center;background:rgba(255,255,255,.45);border-radius:4vmin;padding:2vmin;z-index:6}
+.tray .item{position:relative;left:auto;top:auto;transform:none;width:13vmin;height:13vmin}
+.tray .item:active{transform:scale(.9)}
+@media (orientation:portrait){.tray{width:94%}}
+.target-card{background:#fff;border-radius:2.6vmin;padding:1vmin 2vmin;box-shadow:0 .6vmin 1.6vmin rgba(90,60,0,.2);display:flex;flex-direction:column;align-items:center;margin-top:.8vmin}
+.target-card .tnum{font-size:9vmin;font-weight:900;color:#e8590c;line-height:1}
+.target-card .tdots{display:grid;grid-template-columns:repeat(5,1fr);gap:.8vmin;margin-top:.6vmin;justify-items:center}
+.target-card .tdots i{width:2.2vmin;height:2.2vmin;min-width:12px;min-height:12px;border-radius:50%;background:#ffa94d;border:.3vmin solid #e8590c}
+.target-card .tdots i.off{background:#f1e6d2;border-color:#d9c8a9}
+.bigcount{position:absolute;right:14%;bottom:58%;font-size:16vmin;font-weight:900;color:#fff;text-shadow:0 1vmin 0 rgba(200,110,0,.6),0 1.4vmin 3vmin rgba(120,60,0,.4);z-index:7;animation:popin .3s}
+#btnDone{position:absolute;right:max(2.4vmin,env(safe-area-inset-right));bottom:max(3vmin,env(safe-area-inset-bottom));width:15vmin;height:15vmin;min-width:96px;min-height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8ce99a,#37b24d 75%);box-shadow:0 1vmin 0 #2b8a3e,0 1.6vmin 3vmin rgba(0,80,0,.3);z-index:21;display:flex;align-items:center;justify-content:center;animation:popin .35s backwards}
+#btnDone::after{content:"";width:6.5vmin;height:3.4vmin;border-left:1.4vmin solid #fff;border-bottom:1.4vmin solid #fff;transform:rotate(-48deg) translate(.3vmin,-.6vmin);border-radius:.4vmin}
+#btnDone:active{transform:scale(.9)}
+.ghosthand{position:fixed;z-index:95;pointer-events:none;font-size:64px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));transition:left .55s ease-in-out,top .55s ease-in-out,transform .18s;transform-origin:30% 20%}
+.bgveil{position:absolute;inset:0;background:rgba(255,255,255,.16);z-index:0;pointer-events:none}
+.flashpad{position:absolute;left:8%;right:36%;top:16%;bottom:30%;background:rgba(255,255,255,.55);border-radius:4vmin;z-index:4}
+.flashpad .item{cursor:default}
+.flashcover{position:absolute;inset:-2%;background:linear-gradient(#e7f5ff,#d0ebff);border-radius:4vmin;z-index:8;display:flex;align-items:center;justify-content:center;font-size:14vmin;animation:popin .3s}
+@media (orientation:portrait){.flashpad{left:6%;right:6%;top:30%;bottom:34%}}
+.flyer{position:fixed;z-index:60;pointer-events:none;transition:transform .5s cubic-bezier(.35,.9,.55,1),opacity .5s}
+
+/* compare */
+.duel{position:absolute;inset:10% 2% 6%;display:flex;gap:2%;z-index:4}
+.duel .side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border-radius:4vmin;transition:transform .15s;padding-bottom:1vmin}
+.duel .side:active{transform:scale(.96)}
+.duel .side img.dchar{width:22vmin;height:auto}
+.duel .plate{background:rgba(255,255,255,.55);border-radius:3.4vmin;padding:1.6vmin;display:grid;grid-template-columns:repeat(3,1fr);gap:1vmin;margin-top:1vmin}
+.duel .plate .item{position:relative;transform:none;width:9.5vmin;height:9.5vmin;min-width:56px;min-height:56px}
+.duel .side.win{animation:winner .7s}
+@media (orientation:portrait){.duel{flex-direction:column;inset:12% 6% 8%}.duel .plate{grid-template-columns:repeat(5,1fr)}.duel .side img.dchar{width:18vmin}}
+
+/* compose slots */
+.slotbar{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);display:flex;gap:1.4vmin;background:rgba(255,255,255,.5);padding:1.6vmin;border-radius:3vmin;z-index:5;flex-wrap:wrap;justify-content:center;max-width:70%}
+.slot{width:11vmin;height:11vmin;min-width:64px;min-height:64px;border:.6vmin dashed #b08d57;border-radius:50%;background:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center}
+.slot img{width:88%;height:88%;object-fit:contain;animation:popin .25s}
+.srcgrp{position:absolute;display:flex;flex-direction:column;align-items:center;z-index:4}
+.srcgrp .schar{width:19vmin;height:auto}
+.srcgrp .sitems{display:flex;flex-wrap:wrap;gap:1vmin;justify-content:center;max-width:24vmin;margin-top:.6vmin}
+.srcgrp .item{position:relative;transform:none;width:10.5vmin;height:10.5vmin;min-width:62px;min-height:62px}
+
+/* celebration overlay */
+#cele{position:absolute;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(70,40,110,.45)}
+#cele.on{display:flex}
+.cele-card{background:linear-gradient(#fffbe6,#ffe8c2);border-radius:6vmin;padding:5vmin 6vmin;display:flex;flex-direction:column;align-items:center;gap:2.5vmin;box-shadow:0 2vmin 7vmin rgba(0,0,0,.35);max-width:92%;max-height:88%}
+.cele-title{font-size:7vmin;font-weight:900;color:#e8590c}
+.cele-chars{display:flex;flex-wrap:wrap;justify-content:center;gap:1vmin;max-width:80vmin}
+.cele-chars img{width:12vmin;min-width:64px;animation:dance .7s ease-in-out infinite alternate}
+.cele-star{width:16vmin;animation:starspin 1.6s ease-in-out infinite}
+.confetti{position:absolute;top:-6vmin;border-radius:.6vmin;z-index:81;animation:confall linear forwards}
+
+/* parent panel */
+#parent{position:absolute;inset:0;z-index:100;display:none;background:rgba(40,50,70,.55);align-items:center;justify-content:center}
+#parent.on{display:flex}
+.pp{background:#fff;border-radius:24px;width:min(680px,94%);max-height:88%;overflow:auto;padding:22px;font-size:15px;color:#334;-webkit-overflow-scrolling:touch}
+.pp h2{font-size:20px;margin-bottom:10px;color:#1c2b46}
+.pp h3{font-size:16px;margin:16px 0 6px;color:#3b5bdb}
+.pp .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.pp button{background:#4a90d9;color:#fff;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700}
+.pp button.warn{background:#e03131}
+.pp button.ghost{background:#eef2f7;color:#334}
+.pp select{font-size:15px;padding:8px;border-radius:8px;border:1px solid #ccd;max-width:100%}
+.pp .diag{background:#f6f8fb;border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:12.5px;line-height:1.7;word-break:break-all}
+.pp .skl{display:inline-block;background:#eef6ff;border-radius:8px;padding:6px 10px;margin:3px;font-size:13.5px}
+
+/* no sound bar */
+#nosound{position:absolute;top:0;left:0;right:0;z-index:120;display:none;background:#fff3bf;color:#6b4b00;padding:calc(10px + env(safe-area-inset-top)) 14px 12px;font-size:16px;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#nosound.on{display:block}
+
+/* toast (parent-facing tiny) */
+#toast{position:absolute;bottom:16vmin;left:50%;transform:translateX(-50%);background:rgba(30,40,60,.85);color:#fff;padding:10px 18px;border-radius:12px;font-size:15px;z-index:130;display:none;max-width:86%}
+
+/* ============ ANIMATIONS ============ */
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes idlebob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6vmin)}}
+@keyframes talkbob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-1vmin) rotate(1.5deg)}}
+@keyframes popin{0%{transform:scale(0);opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
+.pop-in{animation:popin .35s backwards}
+@keyframes floaty{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-1.1vmin)}}
+body.calm .balloon,body.calm .boot-chars img,body.calm .island .ihost,body.calm .cele-chars img,body.calm .cele-star,body.calm #btnStart{animation:none!important}
+@keyframes wiggle{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-7deg)}75%{transform:translate(-50%,-50%) rotate(7deg)}}
+@keyframes balloonpop{40%{transform:translate(-50%,-50%) scale(1.35);opacity:1}100%{transform:translate(-50%,-50%) scale(1.9);opacity:0}}
+@keyframes hlflash{0%,100%{filter:none;scale:1}50%{filter:drop-shadow(0 0 3vmin rgba(255,210,40,1)) brightness(1.2);scale:1.22}}
+@keyframes winner{0%,100%{transform:scale(1)}30%{transform:scale(1.12) translateY(-2vmin)}60%{transform:scale(1.05)}}
+@keyframes dance{0%{transform:translateY(0) rotate(-4deg)}100%{transform:translateY(-2.4vmin) rotate(4deg)}}
+@keyframes starspin{0%,100%{transform:scale(1) rotate(-8deg)}50%{transform:scale(1.15) rotate(8deg)}}
+@keyframes confall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(115vh) rotate(720deg)}}
+@keyframes spinring{0%{clip-path:polygon(50% 50%,50% 0,50% 0,50% 0,50% 0)}25%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 0,100% 0)}50%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,100% 100%)}75%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,0 100%)}100%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,0 0)}}
+@keyframes flystar{to{transform:translate(var(--fx),var(--fy)) scale(.4);opacity:.9}}
+@media (prefers-reduced-motion:reduce){.balloon,.boot-chars img,.island .ihost,#btnStart,.cele-chars img,.cele-star{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="nosound">🔇 听不到声音？点这里再试一次（请检查侧边静音开关和音量）</div>
+
+<!-- BOOT -->
+<div class="scene on" id="sceneBoot">
+  <div class="boot-wrap">
+    <div class="boot-title">数字小英雄</div>
+    <div class="boot-chars" id="bootChars"></div>
+    <button id="btnStart" aria-label="开始"><span class="tri"></span><span class="lbl">开始玩</span></button>
+  </div>
+  <button id="gearBoot" style="position:absolute;bottom:max(1.6vmin,env(safe-area-inset-bottom));right:max(1.6vmin,env(safe-area-inset-right));width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.4);font-size:24px;z-index:30;opacity:.65">⚙️<span class="ring" id="gearRingBoot"></span></button>
+</div>
+
+<!-- MAP -->
+<div class="scene" id="sceneMap">
+  <img class="bgimg" id="mapBg" alt="">
+  <div class="map-grid" id="mapGrid"></div>
+  <button id="gearMap">⚙️<span id="gearRing"></span></button>
+</div>
+<div class="hud" id="hudStars"><img id="starImg" alt=""><span id="starCount">0</span></div>
+
+<!-- PLAY -->
+<div class="scene" id="scenePlay">
+  <img class="bgimg" id="playBg" alt="">
+  <div class="bgveil"></div>
+  <div id="stage"></div>
+  <button class="hud" id="btnHome" aria-label="回家">🏠</button>
+  <div class="hud" id="dots"></div>
+  <button id="btnReplay" aria-label="再听一次">🔊</button>
+</div>
+
+<!-- CELEBRATION -->
+<div id="cele"></div>
+
+<!-- PARENT PANEL -->
+<div id="parent"><div class="pp" id="ppBody"></div></div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   数字小英雄 — 单文件应用
+   模块: Util / CONFIG / Store / Speech / Sfx / Skills / UI / Activities / App
+   ===================================================================== */
+
+/* ============ 1. Util ============ */
+const KM_VERSION = '1.0.0';
+const $ = s => document.querySelector(s);
+const QP = new URLSearchParams(location.search);
+const FAST = QP.get('fast') === '1';
+const T = ms => FAST ? Math.max(40, ms * .22) : ms;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const SEED = parseInt(QP.get('seed') || '', 10);
+const rng = isNaN(SEED) ? Math.random : mulberry32(SEED);
+const ri = n => Math.floor(rng() * n);            // 0..n-1
+const pick = arr => arr[ri(arr.length)];
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=ri(i+1);[b[i],b[j]]=[b[j],b[i]]}return b}
+function el(tag, cls, parent){const e=document.createElement(tag);if(cls)e.className=cls;if(parent)parent.appendChild(e);return e}
+function imgTag(src, cls, parent){const e=el('img',cls,parent);e.decoding='async';e.onerror=()=>{e.style.visibility='hidden'};e.src=src;e.alt='';return e}
+const wait = ms => new Promise(r => setTimeout(r, T(ms)));
+
+/* ============ 2. CONFIG（数据表） ============ */
+const NUM_CN = ['零','一','二','三','四','五','六','七','八','九','十'];
+const qtyCN = n => (n === 2 ? '两' : NUM_CN[n]);
+const CHARS = {
+  wukong:'孙悟空', bajie:'猪八戒', wujing:'沙僧', tangseng:'唐僧', bailongma:'白龙马',
+  hulu1:'红娃', hulu2:'橙娃', hulu3:'黄娃', hulu4:'绿娃', hulu5:'青娃', hulu6:'蓝娃', hulu7:'紫娃',
+  yeye:'爷爷', shejing:'蛇精', xiezijing:'蝎子精',
+  ironman:'钢铁侠', cap:'美国队长', thor:'雷神', hulk:'绿巨人', blackwidow:'黑寡妇', hawkeye:'鹰眼',
+  ryder:'莱德', chase:'阿奇', marshall:'毛毛', skye:'天天', rocky:'灰灰', zuma:'路马', rubble:'小砾',
+  bluey:'布鲁伊', bingo:'宾果', bandit:'爸爸班迪', chilli:'妈妈琪莉',
+  peppa:'佩奇', george:'乔治', papa:'猪爸爸', mama:'猪妈妈'
+};
+const ITEMS = {
+  peach:{n:'桃子',cl:'个'}, baozi:{n:'包子',cl:'个'}, hulu:{n:'葫芦',cl:'个'}, star:{n:'星星',cl:'颗'},
+  bone:{n:'骨头饼干',cl:'块'}, ball:{n:'球',cl:'个'}, cookie:{n:'饼干',cl:'块'}, apple:{n:'苹果',cl:'个'}
+};
+const WORLDS = [
+  {id:'xiyou',    name:'花果山', chars:['wukong','bajie','wujing','tangseng','bailongma'], items:['peach','baozi'], tint:'#ffb3c1'},
+  {id:'hulu',     name:'葫芦山', chars:['hulu1','hulu2','hulu3','hulu4','hulu5','hulu6','hulu7','yeye','shejing','xiezijing'], items:['hulu'], tint:'#b2f2bb'},
+  {id:'avengers', name:'英雄城', chars:['ironman','cap','thor','hulk','blackwidow','hawkeye'], items:['star'], tint:'#a5d8ff'},
+  {id:'paw',      name:'冒险湾', chars:['ryder','chase','marshall','skye','rocky','zuma','rubble'], items:['bone','ball'], tint:'#ffd8a8'},
+  {id:'bluey',    name:'蓝狗家', chars:['bluey','bingo','bandit','chilli'], items:['ball','apple'], tint:'#99e9f2'},
+  {id:'peppa',    name:'佩奇小镇', chars:['peppa','george','papa','mama'], items:['cookie','apple'], tint:'#fcc2d7'}
+];
+const charImg = id => `assets/char/${id}.png`;
+const itemImg = id => `assets/item/${id}.png`;
+const PRAISES = ['真棒！','太厉害啦！','好聪明呀！','哇，你做到啦！','真了不起！'];
+const BALLOON_COLORS = ['#ff8787','#74c0fc','#8ce99a','#ffd43b','#b197fc','#63e6be','#ffa8a8','#74d0f1'];
+
+/* ============ 3. Store（持久化，schema v1） ============ */
+const Store = {
+  key:'kidmath_v1',
+  data:null,
+  defaults(){
+    const sk = () => ({lvl:1, up:0, down:0, wins:0, tries:0});
+    return {v:1, stars:0, diff:'auto', voiceURI:null, rot:{}, irot:{}, seen:{}, calm:false, keepAlive:true,
+      skills:{count:sk(), numeral:sk(), produce:sk(), flash:sk(), compare:sk(), compose:sk(), add:sk()}};
+  },
+  load(){
+    let d = null;
+    try{ d = JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ d = null; }
+    const base = this.defaults();
+    if(d && d.v === 1 && d.skills){
+      for(const k in base.skills){ base.skills[k] = Object.assign(base.skills[k], d.skills[k] || {}); }
+      base.stars = (typeof d.stars === 'number' && d.stars >= 0) ? d.stars : 0;
+      base.diff = ['auto','1','2','3'].includes(d.diff) ? d.diff : 'auto';
+      base.voiceURI = d.voiceURI || null;
+      base.rot = d.rot || {}; base.irot = d.irot || {};
+      base.seen = d.seen || {}; base.calm = !!d.calm;
+      base.keepAlive = d.keepAlive !== false;
+    }
+    this.data = base;
+  },
+  save(){ try{ localStorage.setItem(this.key, JSON.stringify(this.data)); }catch(e){/* 私密模式/满容量: 内存态继续 */} },
+  reset(){ this.data = this.defaults(); this.save(); }
+};
+
+/* ============ 4. Speech（iOS 军规引擎） ============ */
+const Speech = {
+  noTTS: !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window),
+  unlocked:false, everWorked:false, voice:null, voices:[],
+  lastReq:0, welcomeText:'', welcomeAt:0, _respoke:false,
+  _refs:[], _pend:null, _cancelT:null, _gen:0,
+  _countQ:[], _latestCount:null,
+  log:[],
+
+  init(){
+    if(this.noTTS) return;
+    const load = () => { try{ this.voices = speechSynthesis.getVoices() || []; }catch(e){ this.voices=[]; } this.pickVoice(); };
+    load();
+    try{
+      speechSynthesis.onvoiceschanged = () => {
+        const hadZh = !!this.voice;
+        load();
+        // 军规6: 声音列表晚到 → 用正确声音补说第一句（严格限定条件, 见 DESIGN v2）
+        if(this.unlocked && !this.everWorked && !this._respoke && this.voice && !hadZh
+           && Date.now() - this.welcomeAt < 10000 && this.welcomeText){
+          this._respoke = true;
+          const gen = this._gen;
+          setTimeout(() => {
+            if(gen !== this._gen) return;
+            if(speechSynthesis.speaking || speechSynthesis.pending) return;   // 军规7: 不插嘴
+            if(Date.now() - this.lastReq < 1500) return;
+            this.say(this.welcomeText);
+          }, 300);
+        }
+      };
+    }catch(e){}
+    document.addEventListener('visibilitychange', () => {
+      if(!document.hidden){ try{ speechSynthesis.resume(); }catch(e){} }
+    });
+    window.addEventListener('pageshow', () => { try{ speechSynthesis.resume(); }catch(e){} });
+  },
+
+  pickVoice(){
+    const stored = Store.data && Store.data.voiceURI;
+    const zh = this.voices.filter(v => /^zh/i.test(v.lang) || /中文|Chinese/i.test(v.name));
+    if(stored){ const m = this.voices.find(v => v.voiceURI === stored); if(m){ this.voice = m; return; } }
+    const score = v => (/zh[-_]CN/i.test(v.lang) ? 4 : 0)
+      + (/Tingting|Ting-Ting|婷婷/i.test(v.name) ? 3 : 0)
+      + (/Xiaoxiao|晓晓/i.test(v.name) ? 3 : 0)
+      + (v.localService ? 1 : 0) + (v.default ? .5 : 0);
+    this.voice = zh.sort((a,b) => score(b) - score(a))[0] || null;
+  },
+
+  unlock(text){
+    // 军规1: 必须在 click 抬起手势的同步调用栈内首次 speak
+    this.unlocked = true; this.welcomeText = text; this.welcomeAt = Date.now();
+    this.say(text);
+    setTimeout(() => { if(!this.everWorked) UI.showNoSound(); }, 3500);
+  },
+
+  /* 指令/反馈通道: 最新覆盖 + 安全打断(cancel 后 ≥180ms) */
+  say(text, opts){
+    opts = opts || {};
+    if(this.noTTS || !this.unlocked || !text) return Promise.resolve();
+    if(opts.polite){
+      try{ if(speechSynthesis.speaking || speechSynthesis.pending) return Promise.resolve(); }catch(e){}
+      if(Date.now() - this.lastReq < 1500) return Promise.resolve();
+    }
+    this.lastReq = Date.now();
+    try{ speechSynthesis.resume(); }catch(e){}   // 军规4
+    let busy = false;
+    try{ busy = speechSynthesis.speaking || speechSynthesis.pending; }catch(e){}
+    if(busy || this._cancelT){
+      return new Promise(res => {
+        if(this._pend) this._pend.res();          // 军规8: 旧的被最新覆盖，等待者立即放行
+        this._pend = {text, opts, res};
+        if(!this._cancelT){
+          try{ speechSynthesis.cancel(); }catch(e){}
+          this._instrActive = false;
+          this._countQ.length = 0; this._latestCount = null;
+          this._cancelT = setTimeout(() => {      // 军规2: cancel 后 ≥150ms
+            this._cancelT = null;
+            const p = this._pend; this._pend = null;
+            if(p) this._speakNow(p.text, p.opts, p.res);
+          }, 180);
+        }
+      });
+    }
+    return new Promise(res => this._speakNow(text, opts, res));
+  },
+
+  politeSay(text){ return this.say(text, {polite:true}); },
+
+  _mkUtter(text, opts){
+    const u = new SpeechSynthesisUtterance(text);
+    if(this.voice) u.voice = this.voice;
+    u.lang = 'zh-CN';                              // 恒设 lang（无 voice 时兜底）
+    u.rate = opts.rate || .92; u.pitch = opts.pitch || 1.1; u.volume = 1;
+    this._refs.push(u);                            // 军规6: 防 GC
+    return u;
+  },
+  _release(u){ const i = this._refs.indexOf(u); if(i >= 0) this._refs.splice(i, 1); },
+  _markWork(){ this.everWorked = true; UI.hideNoSound(); },
+
+  _speakNow(text, opts, res){
+    let u;
+    try{ u = this._mkUtter(text, opts); }catch(e){ res(); return; }
+    this.log.push({t:Date.now(), text});
+    const gen = this._gen;
+    let settled = false, started = false;
+    this._instrActive = !opts.isCount;
+    if(!opts.isCount) Sfx.duck(true);              // 语音期间音效闪避（U7）
+    const finish = () => { if(!settled){ settled = true; if(!opts.isCount){ this._instrActive = false; Sfx.duck(false); } this._release(u); res(); } };
+    u.onstart = () => { started = true; this._markWork(); };
+    u.onboundary = () => { started = true; this._markWork(); };
+    u.onend = () => { this._markWork(); finish(); };
+    u.onerror = e => { if(e && e.error === 'interrupted'){} finish(); };
+    // 军规3: onend 不可信 → 超时兜底
+    const tmo = opts.tmo || Math.max(2500, text.length * 380);
+    setTimeout(finish, tmo);
+    try{ speechSynthesis.resume(); speechSynthesis.speak(u); }catch(e){ finish(); return; }
+    // 健康信号轮询（250/450ms）
+    [250, 450].forEach(d => setTimeout(() => {
+      try{ if(speechSynthesis.speaking || speechSynthesis.pending) this._markWork(); }catch(e){}
+    }, d));
+    // 被吞恢复: 700ms 无事件且引擎全空闲 → 同文本重试一次（generation token 保护）
+    setTimeout(() => {
+      if(settled || started || gen !== this._gen || this._cancelT) return;
+      let idle = false;
+      try{ idle = !speechSynthesis.speaking && !speechSynthesis.pending; }catch(e){}
+      if(idle){
+        try{
+          const u2 = this._mkUtter(text, opts);
+          u2.onend = () => { this._markWork(); finish(); };
+          u2.onerror = () => finish();
+          u2.onstart = () => this._markWork();
+          speechSynthesis.speak(u2);
+          setTimeout(() => { this._release(u2); }, tmo);
+        }catch(e){}
+      }
+    }, 700);
+  },
+
+  /* 计数词通道: 有序自然队列（不 cancel, 保听觉一一对应）; 积压>2 只留最新（军规8收敛）。
+     若指令语音正在播（孩子等不及开始点数）→ 首个数词走安全打断通道抢占指令 */
+  countSay(word){
+    if(this.noTTS || !this.unlocked) return;
+    if(this._instrActive || this._cancelT){
+      this.say(word, {rate:1.05, pitch:1.15, tmo:1600, isCount:true});
+      return;
+    }
+    this.lastReq = Date.now();
+    try{ speechSynthesis.resume(); }catch(e){}
+    this._countQ = this._countQ.filter(q => !q.done);
+    if(this._countQ.length >= 3) return;           // 防御性硬上限（正常被 countBusy 背压挡住, 军规8: 绝不排长队）
+    this._enqCount(word);
+  },
+  /* 输入背压: 计数词积压≥2 时活动应暂缓接受新的计数点击（保证听觉序列完整不丢词） */
+  countBusy(){
+    if(this.noTTS || !this.unlocked) return false;
+    this._countQ = this._countQ.filter(q => !q.done);
+    if(this._countQ.length >= 2) return true;
+    if(this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount) return true;
+    return false;
+  },
+  _enqCount(word){
+    let u;
+    try{ u = this._mkUtter(word, {rate:1.0, pitch:1.15}); }catch(e){ return; }
+    this.log.push({t:Date.now(), text:word, count:true});
+    const q = {u, done:false};
+    const fin = () => {
+      if(q.done) return;
+      q.done = true; this._release(u);
+      this._countQ = this._countQ.filter(x => x !== q);
+      if(this._latestCount && this._countQ.length <= 1){
+        const w = this._latestCount; this._latestCount = null; this._enqCount(w);
+      }
+    };
+    u.onstart = () => this._markWork();
+    u.onend = () => { this._markWork(); fin(); };
+    u.onerror = fin;
+    // 引擎从未出声(疑似静音/不可用)时用短看门狗, 避免背压把游戏节奏卡成 1.6s/次
+    setTimeout(fin, this.everWorked ? 1600 : 500);
+    this._countQ.push(q);
+    try{ speechSynthesis.speak(u); }catch(e){ fin(); }
+  },
+
+  stopAll(){
+    this._gen++;
+    this._instrActive = false;
+    Sfx.duck(false);
+    if(this._pend){ this._pend.res(); this._pend = null; }
+    if(this._cancelT){ clearTimeout(this._cancelT); this._cancelT = null; }
+    this._countQ.length = 0; this._latestCount = null;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    this.lastReq = Date.now();                      // 冷却 1.5s, 抑制 polite 兜底
+  },
+
+  diag(){
+    let sp = false, pe = false;
+    try{ sp = speechSynthesis.speaking; pe = speechSynthesis.pending; }catch(e){}
+    return {supported:!this.noTTS, unlocked:this.unlocked, everWorked:this.everWorked,
+      voicesTotal:this.voices.length,
+      zhVoices:this.voices.filter(v => /^zh/i.test(v.lang)).map(v => v.name + '(' + v.lang + ')'),
+      chosen:this.voice ? this.voice.name + ' (' + this.voice.lang + ')' : '(无·将用 lang=zh-CN 兜底)',
+      speaking:sp, pending:pe};
+  }
+};
+
+/* ============ 5. Sfx（WebAudio 合成音效） ============ */
+const Sfx = {
+  ctx:null, master:null, silentEl:null,
+  ensure(){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      if(!this.ctx){
+        this.ctx = new AC();
+        this.master = this.ctx.createGain(); this.master.gain.value = .5;
+        this.master.connect(this.ctx.destination);
+        this.ctx.onstatechange = () => {};        // 中断后由下一次手势内 ensure() resume
+      }
+      if(this.ctx.state === 'suspended') this.ctx.resume();
+    }catch(e){}
+  },
+  duck(on){ try{ if(this.master) this.master.gain.value = on ? .16 : .5; }catch(e){} },
+  unlock(){
+    this.ensure();
+    try{ const b = this.ctx.createBuffer(1, 1, 22050); const s = this.ctx.createBufferSource();
+      s.buffer = b; s.connect(this.ctx.destination); s.start(0); }catch(e){}
+    // 军规5: 循环无声 <audio> 提升媒体会话（经验性 workaround, 非平台保证; 家长面板可关）
+    try{
+      if(!Store.data.keepAlive) return;
+      if(!this.silentEl){
+        const a = document.createElement('audio');
+        a.setAttribute('playsinline',''); a.loop = true; a.volume = .01;
+        a.src = this._silentWav(); document.body.appendChild(a); this.silentEl = a;
+        // 生命周期: 隐藏/离开页面显式暂停; 回到可见尝试恢复(被拒则等下一次手势内 unlock)
+        document.addEventListener('visibilitychange', () => {
+          if(!this.silentEl) return;
+          if(document.hidden){ try{ this.silentEl.pause(); }catch(e){} }
+          else { try{ const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+        });
+        window.addEventListener('pagehide', () => { try{ this.silentEl && this.silentEl.pause(); }catch(e){} });
+      }
+      const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {});
+    }catch(e){}
+  },
+  stopKeepAlive(){ try{ if(this.silentEl){ this.silentEl.pause(); this.silentEl.remove(); this.silentEl = null; } }catch(e){} },
+  _silentWav(){
+    const sr = 8000, n = 4000, size = 44 + n, b = new Uint8Array(size), dv = new DataView(b.buffer);
+    const ws = (o, s) => { for(let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
+    ws(0,'RIFF'); dv.setUint32(4, 36 + n, true); ws(8,'WAVE'); ws(12,'fmt ');
+    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+    dv.setUint32(24,sr,true); dv.setUint32(28,sr,true); dv.setUint16(32,1,true); dv.setUint16(34,8,true);
+    ws(36,'data'); dv.setUint32(40,n,true); b.fill(128,44);
+    let s = ''; for(let i = 0; i < size; i++) s += String.fromCharCode(b[i]);
+    return 'data:audio/wav;base64,' + btoa(s);
+  },
+  tone(f0, f1, dur, type, vol, when){
+    try{
+      if(!this.ctx) return;
+      const t = this.ctx.currentTime + (when || 0);
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t);
+      if(f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || .3, t + .015);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + .06);
+    }catch(e){}
+  },
+  pop(){ this.ensure(); this.tone(520, 900, .09, 'triangle', .45) },
+  ding(){ this.ensure(); this.tone(880,0,.12,'sine',.32); this.tone(1174.7,0,.14,'sine',.28,.07); this.tone(1568,0,.24,'sine',.28,.14) },
+  chomp(){ this.ensure(); this.tone(230,90,.09,'square',.32); this.tone(150,70,.11,'square',.26,.06) },
+  soft(){ this.ensure(); this.tone(392,330,.28,'sine',.2) },
+  yay(){ this.ensure(); [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>this.tone(f,0,.16,'triangle',.28,i*.085)) },
+  woosh(){ this.ensure(); this.tone(1300,320,.24,'sawtooth',.1) },
+  fly(){ this.ensure(); this.tone(500,1500,.4,'sine',.22) }
+};
+
+/* ============ 6. Skills（技能引擎 + 出题） ============ */
+const Skills = {
+  lvl(k){ const d = Store.data; return d.diff === 'auto' ? d.skills[k].lvl : parseInt(d.diff, 10); },
+  record(k, firstTry){
+    const s = Store.data.skills[k]; if(!s) return;
+    s.tries++;
+    if(firstTry){ s.wins++; s.up++; s.down = 0; if(s.up >= 3 && s.lvl < 3){ s.lvl++; s.up = 0; } }
+    else { s.up = 0; s.down++; if(s.down >= 2 && s.lvl > 1){ s.lvl--; s.down = 0; } }
+    Store.save();
+  },
+  unlockedTypes(){
+    const sk = Store.data.skills, t = ['count','numeral'];
+    if(sk.count.wins >= 2) t.push('produce','flash');
+    if(sk.count.lvl >= 2){ t.push('compare','compose'); }
+    if(sk.compose.wins >= 2) t.push('add');
+    return t;
+  },
+  plan(){
+    const avail = this.unlockedTypes(), sk = Store.data.skills;
+    const plan = ['count'];
+    let pool = avail.slice();
+    for(let i = 0; i < 4; i++){
+      let cand = pool.filter(t => t !== plan[plan.length - 1]);
+      if(!cand.length) cand = pool;
+      cand.sort((a,b) => (sk[a].wins + rng()) - (sk[b].wins + rng()));
+      plan.push(cand[0]);
+    }
+    if(avail.includes('numeral') && !plan.includes('numeral')) plan[1 + ri(4)] = 'numeral';
+    return plan;
+  },
+  gen(type){
+    // 重复规避: 与上一题参数完全相同时重掷一次（T7）
+    let p = this._gen1(type);
+    this._last = this._last || {};
+    if(this._last[type] === JSON.stringify(p)) p = this._gen1(type);
+    this._last[type] = JSON.stringify(p);
+    return p;
+  },
+  _gen1(type){
+    const L = this.lvl(type);
+    switch(type){
+      case 'count':  return {n: L === 1 ? 1 + ri(3) : L === 2 ? 2 + ri(4) : 4 + ri(7)};
+      case 'numeral':{
+        const range = L === 1 ? 3 : L === 2 ? 5 : 10, cnt = L === 3 ? 4 : 3;
+        return {target: 1 + ri(range), range, cnt};
+      }
+      case 'produce':return {n: L === 1 ? 2 + ri(2) : L === 2 ? 2 + ri(4) : 3 + ri(4)};
+      case 'flash':  return {n: L === 1 ? 1 + ri(3) : 1 + ri(4)};   // 感数: 1-4, 不需逐一点数
+      case 'compare':{
+        const diff = L === 1 ? 3 : L === 2 ? 2 : 1;
+        const small = 1 + ri(3), big = Math.min(small + diff, 6);
+        return {a: big, b: small};
+      }
+      case 'compose':{
+        const total = L === 1 ? 3 + ri(2) : L === 2 ? 5 : 6 + ri(5);
+        const a = 1 + ri(total - 1);
+        return {a, b: total - a};
+      }
+      case 'add':{
+        const total = L === 1 ? 2 + ri(3) : L === 2 ? 3 + ri(3) : 6 + ri(5);
+        let a = 1 + ri(Math.min(5, total - 1)); let b = total - a;
+        if(b > 5){ b = 5; a = total - b; }
+        return {a, b};
+      }
+    }
+  }
+};
+
+/* ============ 7. UI 杂项 ============ */
+const UI = {
+  showNoSound(){ $('#nosound').classList.add('on'); },
+  hideNoSound(){ $('#nosound').classList.remove('on'); },
+  toast(msg, ms){
+    const t = $('#toast'); t.textContent = msg; t.style.display = 'block';
+    clearTimeout(this._tt); this._tt = setTimeout(() => { t.style.display = 'none'; }, ms || 2600);
+  },
+  bump(elm){ elm.style.scale = '.88'; setTimeout(() => { elm.style.scale = ''; }, 130); },
+  confetti(host, count){
+    const n = Math.min(count || 30, 36);           // 粒子预算 ≤36
+    const colors = ['#ff8787','#ffd43b','#8ce99a','#74c0fc','#b197fc','#ffa8a8'];
+    for(let i = 0; i < n; i++){
+      const c = el('div','confetti', host);
+      const s = 8 + ri(10);
+      c.style.cssText += `left:${ri(100)}%;width:${s}px;height:${s * (0.6 + rng() * .8)}px;background:${pick(colors)};animation-duration:${(2.2 + rng() * 1.6).toFixed(2)}s;animation-delay:${(rng() * .5).toFixed(2)}s`;
+      setTimeout(() => c.remove(), T(4500));
+    }
+  },
+  starFly(){
+    const target = $('#hudStars'), r = target.getBoundingClientRect();
+    const f = imgTag(itemImg('star'), 'flyer', document.body);
+    const sx = innerWidth / 2 - 40, sy = innerHeight / 2 - 40;
+    f.style.cssText += `left:${sx}px;top:${sy}px;width:80px;height:80px`;
+    requestAnimationFrame(() => {
+      f.style.transform = `translate(${r.left + r.width/2 - sx - 40}px,${r.top + r.height/2 - sy - 40}px) scale(.4)`;
+      f.style.opacity = '.85';
+    });
+    Sfx.fly();
+    setTimeout(() => f.remove(), T(650));
+  },
+  syncStars(){ $('#starCount').textContent = Store.data.stars; }
+};
+
+/* ============ 8. 活动通用件 ============ */
+function scatterPositions(n){
+  const cols = n <= 3 ? n : n <= 6 ? 3 : n <= 8 ? 4 : 4;
+  const rows = Math.ceil(n / cols);
+  const cells = [];
+  for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++) cells.push({r, c});
+  return shuffle(cells).slice(0, n).map(({r, c}) => ({
+    x: (c + .5) / cols * 100 + (rng() * 8 - 4),
+    y: (r + .5) / rows * 100 + (rng() * 8 - 4)
+  }));
+}
+function distractors(correct, max){
+  const set = new Set([correct]);
+  const cand = shuffle([correct - 1, correct + 1, correct - 2, correct + 2, correct + 3]
+    .filter(v => v >= 1 && v <= Math.max(max, correct + 2) && v <= 10));
+  for(const v of cand){ if(set.size < 3) set.add(v); }
+  let guard = 20;
+  while(set.size < 3 && guard--){ const v = 1 + ri(10); set.add(v); }
+  return shuffle([...set]);
+}
+function hostBox(stage, charId, opt){
+  const b = el('div','hostbox', stage);
+  imgTag(charImg(charId), 'host', b);
+  const nm = el('div','hname', b); nm.textContent = CHARS[charId];
+  if(opt && opt.small) b.style.width = '22vmin';
+  return b;
+}
+async function sayAs(box, text, opts){
+  if(box) box.classList.add('talking');
+  await Speech.say(text, opts);
+  if(box) box.classList.remove('talking');
+}
+/* 依次示范点数（答错后的脚手架）。高亮加在内层 img 上——img 无基础 transform, 动画不会使元素跳位 */
+async function demoCount(ctx, items){
+  for(let i = 0; i < items.length; i++){
+    if(!ctx.alive()) return;
+    const t = items[i].querySelector('img') || items[i];
+    t.classList.remove('hl'); void t.offsetWidth;
+    t.classList.add('hl'); Sfx.pop();
+    await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
+    await wait(140);
+  }
+}
+/* 五格框/骰子式稳定点位（感数与点阵提示用, V4） */
+function frameSpots(n){
+  const P = {
+    1:[[50,50]], 2:[[32,50],[68,50]], 3:[[26,64],[50,36],[74,64]],
+    4:[[32,32],[68,32],[32,68],[68,68]], 5:[[28,30],[72,30],[50,50],[28,70],[72,70]]
+  };
+  return P[Math.min(n,5)] || P[5];
+}
+/* 幽灵手示范（P0-U1/U3）: 首遇活动类型时演示手势, 孩子任意点击即跳过 */
+const Ghost = {
+  el:null,
+  async run(ctx, anchors){
+    if(!anchors || !anchors.length) return;
+    if(!this.el){ this.el = el('div','ghosthand', document.body); this.el.textContent = '👆'; }
+    const g = this.el;
+    let skipped = false;
+    const skip = () => { skipped = true; };
+    document.addEventListener('pointerdown', skip, {once:true});
+    const r0 = anchors[0].getBoundingClientRect();
+    g.style.transition = 'none'; g.style.display = 'block';
+    g.style.left = (r0.left + r0.width * .5) + 'px'; g.style.top = (r0.top + r0.height + 40) + 'px';
+    void g.offsetWidth; g.style.transition = '';
+    for(const a of anchors){
+      if(skipped || !ctx.alive()) break;
+      const r = a.getBoundingClientRect();
+      g.style.left = (r.left + r.width * .45) + 'px';
+      g.style.top = (r.top + r.height * .55) + 'px';
+      await wait(650);
+      if(skipped || !ctx.alive()) break;
+      g.style.transform = 'scale(.76)';
+      const t = a.querySelector('img') || a;
+      t.classList.remove('hl'); void t.offsetWidth; t.classList.add('hl');
+      Sfx.pop();
+      await wait(260);
+      g.style.transform = '';
+      await wait(220);
+    }
+    g.style.display = 'none';
+    document.removeEventListener('pointerdown', skip);
+  }
+};
+/* 数字牌问答: resolve {firstTry}
+   脚手架阶梯(T5): 错1次→示范重数+再问; 错2次→示范后正确牌脉冲提示(此后完成一律计 hinted) */
+function askNumber(stage, ctx, cfg){
+  return new Promise(resolve => {
+    let firstTry = true, wrongs = 0, lock = false;
+    const bar = el('div','cards', stage);
+    stage.dataset.answer = cfg.correct;
+    for(const v of distractors(cfg.correct, cfg.max || 10)){
+      const c = el('button','ncard pop-in', bar);
+      c.textContent = v; c.dataset.value = v;
+      c.addEventListener('pointerdown', async e => {
+        if(e.isPrimary === false || lock || !ctx.alive()) return;
+        lock = true; Sfx.ensure(); UI.bump(c);
+        if(v === cfg.correct){
+          c.classList.add('right'); Sfx.ding();
+          UI.confetti(stage, 18);
+          await sayAs(cfg.hostEl, `${NUM_CN[v]}！${pick(PRAISES)}${cfg.doneLine}`);
+          if(!ctx.alive()) return;
+          bar.remove();
+          resolve({firstTry});
+        }else{
+          firstTry = false; wrongs++; Sfx.soft(); c.classList.add('dim');
+          await sayAs(cfg.hostEl, `这是${NUM_CN[v]}。我们再一起数一数！`);
+          if(!ctx.alive()) return;
+          bar.style.visibility = 'hidden';
+          if(cfg.demo) await cfg.demo();
+          if(!ctx.alive()) return;
+          bar.style.visibility = '';
+          if(wrongs >= 2){
+            const rightCard = bar.querySelector(`[data-value="${cfg.correct}"]`);
+            if(rightCard){ rightCard.style.animation = 'pulse 1s ease-in-out infinite'; }
+          }
+          await sayAs(cfg.hostEl, cfg.reask);
+          App.setInstruction(cfg.reask);
+          lock = false;
+        }
+      });
+    }
+  });
+}
+
+/* ============ 9. 六种活动 ============ */
+const Activities = {
+
+  /* 数一数: 一一对应 + 基数 */
+  async count(stage, ctx){
+    const {n} = ctx.params, it = ITEMS[ctx.item];
+    const host = hostBox(stage, ctx.host);
+    const field = el('div','field', stage);
+    const items = [];
+    scatterPositions(n).forEach((p, i) => {
+      const b = el('button','item countable pop-in', field);
+      b.style.left = p.x + '%'; b.style.top = p.y + '%';
+      b.style.animationDelay = (i * .09) + 's';
+      imgTag(itemImg(ctx.item), '', b);
+      items.push(b);
+    });
+    const intro = `${CHARS[ctx.host]}想知道，这里有几${it.cl}${it.n}？点一点，数一数吧！`;
+    App.setInstruction(intro); sayAs(host, intro);
+    ctx.nudge(intro, items[0]);
+    ctx.maybeDemo([items[0]]);
+    let counted = 0;
+    await new Promise(res => {
+      items.forEach(b => b.addEventListener('pointerdown', e => {
+        if(e.isPrimary === false || !ctx.alive()) return;
+        if(b.classList.contains('counted')){ UI.bump(b); return; }
+        if(Speech.countBusy()){ UI.bump(b); return; }   // 输入背压: 数词念完前不接受下一个（I8）
+        Sfx.pop(); counted++;
+        b.classList.add('counted');
+        const bd = el('span','cbadge', b); bd.textContent = counted;
+        Speech.countSay(NUM_CN[counted]);
+        ctx.touch();
+        if(counted === n) ctx.after(700, res);
+      }));
+    });
+    if(!ctx.alive()) return {aborted:true};
+    // 基数探测: 提问时隐去数字徽章, 答案须来自"数到最后一个数"的记忆而非抄读（T4）
+    items.forEach(b => { const bd = b.querySelector('.cbadge'); if(bd){ bd.style.transition = 'opacity .5s'; bd.style.opacity = '0'; } });
+    const q = `一共有几${it.cl}${it.n}呀？`;
+    App.setInstruction(q); await sayAs(host, q); ctx.nudge(q);
+    const {firstTry} = await askNumber(stage, ctx, {
+      correct:n, hostEl:host, reask:`现在，一共有几${it.cl}${it.n}呀？`,
+      doneLine:`一共有${qtyCN(n)}${it.cl}${it.n}！`,
+      demo:() => demoCount(ctx, items)
+    });
+    return {skill:'count', firstTry};
+  },
+
+  /* 闪一闪: 感数 1-4（一眼识数, 不逐一点击） */
+  async flash(stage, ctx){
+    const {n} = ctx.params, it = ITEMS[ctx.item];
+    const host = hostBox(stage, ctx.host, {small:true});
+    const pad = el('div','flashpad', stage);
+    const items = [];
+    frameSpots(n).forEach(([x, y]) => {
+      const w = el('div','item', pad);
+      w.style.left = x + '%'; w.style.top = y + '%';
+      imgTag(itemImg(ctx.item), '', w);
+      items.push(w);
+    });
+    const intro = `睁大眼睛看好哦！它们马上要藏起来啦！`;
+    App.setInstruction(intro);
+    await sayAs(host, intro);
+    if(!ctx.alive()) return {aborted:true};
+    await wait(Skills.lvl('flash') === 1 ? 1600 : 1200);
+    if(!ctx.alive()) return {aborted:true};
+    const cover = el('div','flashcover', pad); cover.textContent = '☁️';
+    const q = `刚才有几${it.cl}${it.n}？`;
+    App.setInstruction(q); await sayAs(host, q); ctx.nudge(q);
+    const {firstTry} = await askNumber(stage, ctx, {
+      correct:n, hostEl:host, max:5, reask:`刚才有几${it.cl}${it.n}呀？`,
+      doneLine:`刚才有${qtyCN(n)}${it.cl}${it.n}！你的小眼睛真亮！`,
+      demo:async () => {                    // 脚手架: 掀开云朵重数, 再盖上
+        cover.style.display = 'none';
+        await demoCount(ctx, items);
+        if(!ctx.alive()) return;
+        await wait(500);
+        cover.style.display = '';
+      }
+    });
+    return {skill:'flash', firstTry};
+  },
+
+  /* 找数字: 数词/点阵数量 → 数字符号（点阵提示卡让无声环境也能完成任务, P0-U1） */
+  async numeral(stage, ctx){
+    const {target, range, cnt} = ctx.params;
+    const host = hostBox(stage, ctx.host, {small:true});
+    // 点阵提示卡: 数一数点点, 找到对应数字（数量→符号链接）
+    const tc = el('div','target-card', host);
+    const dots = el('div','tdots', tc);
+    for(let i = 0; i < target; i++) el('i','', dots);
+    const field = el('div','field', stage);
+    const vals = [target];
+    let guard = 40;
+    while(vals.length < cnt && guard--){ const v = 1 + ri(range); if(!vals.includes(v)) vals.push(v); }
+    const pos = scatterPositions(vals.length);
+    stage.dataset.answer = target;
+    const intro = `数一数卡片上的点点，找一找，数字${NUM_CN[target]}藏在哪个气球里？`;
+    App.setInstruction(intro); sayAs(host, intro); ctx.nudge(`找一找，数字${NUM_CN[target]}在哪里？`);
+    let firstTry = true;
+    const balloons = [];
+    await new Promise(res => {
+      shuffle(vals).forEach((v, i) => {
+        const b = el('button','balloon', field);
+        b.style.left = pos[i].x + '%'; b.style.top = pos[i].y + '%';
+        b.style.background = BALLOON_COLORS[i % BALLOON_COLORS.length];
+        b.style.animationDelay = (i * .4) + 's';
+        b.textContent = v; b.dataset.value = v;
+        balloons.push(b);
+        b.addEventListener('pointerdown', async e => {
+          if(e.isPrimary === false || !ctx.alive() || b.classList.contains('popped')) return;
+          Sfx.ensure(); ctx.touch();
+          if(v === target){
+            b.classList.add('popped'); Sfx.ding(); UI.confetti(stage, 16);
+            await sayAs(host, `找到啦！这就是${NUM_CN[v]}！${pick(PRAISES)}`);
+            res();
+          }else{
+            firstTry = false; Sfx.soft();
+            b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+            sayAs(host, `这是${NUM_CN[v]}呀。找一找${NUM_CN[target]}！`);
+          }
+        });
+      });
+      ctx.maybeDemo([tc, balloons[0]]);
+    });
+    if(!ctx.alive()) return {aborted:true};
+    return {skill:'numeral', firstTry};
+  },
+
+  /* 喂一喂: 按数取物——真正的生产性测量（P0-T1）:
+     自由喂(可多可少), 孩子自己按绿勾提交; 只有首次提交恰好 N 计 independent。
+     错了→用目标卡点点示范重数→物品复位重试; 两次失败→幽灵手示范喂法(hinted)。 */
+  async produce(stage, ctx){
+    const {n} = ctx.params, it = ITEMS[ctx.item];
+    const L = Skills.lvl('produce');
+    const host = hostBox(stage, ctx.host);
+    const tc = el('div','target-card', host);
+    tc.innerHTML = `<div class="tnum">${n}</div>`;
+    const dots = el('div','tdots', tc);
+    for(let i = 0; i < n; i++) el('i','off', dots);
+    if(L >= 3) dots.style.display = 'none';        // 挑战档: 只给数字符号, 不给点阵脚手架
+    stage.dataset.answer = n;
+    const tray = el('div','tray', stage);
+    const m = Math.min(n + 2 + (L > 1 ? 1 : 0), 8);
+    const items = [];
+    for(let i = 0; i < m; i++){
+      const b = el('button','item pop-in', tray);
+      b.style.animationDelay = (i * .07) + 's';
+      imgTag(itemImg(ctx.item), '', b);
+      items.push(b);
+    }
+    let btnDone = null, fed = 0, big = null, attempts = 0, resolved = false;
+    const setBig = () => { if(big){ big.remove(); big = null; } if(fed > 0){ big = el('div','bigcount', stage); big.textContent = fed; } };
+    const intro = `我是${CHARS[ctx.host]}！我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了，就按绿色的勾勾告诉我哦！`;
+    App.setInstruction(intro); sayAs(host, intro);
+    ctx.nudge(`我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了就按绿色的勾勾！`);
+    const feedOne = b => {
+      fed++;
+      b.classList.add('dim');
+      const r0 = b.getBoundingClientRect(), r1 = host.getBoundingClientRect();
+      const f = imgTag(itemImg(ctx.item), 'flyer', document.body);
+      f.style.cssText += `left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px`;
+      requestAnimationFrame(() => {
+        f.style.transform = `translate(${r1.left + r1.width/2 - r0.left - r0.width/2}px,${r1.top + r1.height*.35 - r0.top - r0.height/2}px) scale(.15)`;
+        f.style.opacity = '.6';
+      });
+      setTimeout(() => f.remove(), T(520));
+      ctx.after(380, () => { Sfx.chomp(); host.classList.add('talking'); ctx.after(220, () => host.classList.remove('talking')); });
+      Speech.countSay(NUM_CN[Math.min(fed, 10)]);
+      if(fed <= n) dots.children[fed - 1] && dots.children[fed - 1].classList.remove('off');
+      setBig();
+      if(!btnDone){
+        btnDone = el('button','', stage); btnDone.id = 'btnDone';
+        btnDone.setAttribute('aria-label','喂好了');
+        btnDone.addEventListener('pointerdown', onSubmit);
+      }
+    };
+    const resetRound = () => {
+      fed = 0; setBig();
+      items.forEach(b => b.classList.remove('dim'));
+      for(const d of dots.children) d.classList.add('off');
+    };
+    let finish;
+    const done = new Promise(r => { finish = r; });
+    async function onSubmit(e){
+      if((e && e.isPrimary === false) || !ctx.alive() || resolved) return;
+      ctx.touch(); Sfx.ensure(); UI.bump(btnDone);
+      attempts++;
+      if(fed === n){
+        resolved = true;
+        Sfx.yay(); UI.confetti(stage, 14);
+        await sayAs(host, `啊呜～正好${qtyCN(n)}${it.cl}${it.n}，吃饱啦！谢谢你！`);
+        finish({firstTry: attempts === 1});
+        return;
+      }
+      // 中性脚手架: 数"我吃到的" vs 目标
+      Sfx.soft();
+      await sayAs(host, `我们数一数我吃了几${it.cl}……`);
+      if(!ctx.alive()) return;
+      for(let i = 0; i < fed && i <= 10; i++){
+        if(!ctx.alive()) return;
+        Sfx.pop();
+        await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
+        await wait(120);
+      }
+      const diffLine = fed === 0 ? `我还什么都没吃到呀！` : `是${qtyCN(fed)}${it.cl}。`;
+      await sayAs(host, `${diffLine}可是我想吃${qtyCN(n)}${it.cl}哦！再试一次吧！`);
+      if(!ctx.alive()) return;
+      resetRound();
+      if(attempts >= 2){
+        // 二级脚手架: 幽灵手示范喂 n 个（此后完成计 hinted）
+        await Ghost.run(ctx, items.slice(0, n));
+        if(!ctx.alive()) return;
+        Speech.politeSay(`喂${qtyCN(n)}${it.cl}，然后按绿色的勾勾！`);
+      }
+    }
+    items.forEach(b => b.addEventListener('pointerdown', e => {
+      if(e.isPrimary === false || !ctx.alive() || resolved || b.classList.contains('dim')) return;
+      if(Speech.countBusy()){ UI.bump(b); return; }
+      ctx.touch();
+      if(fed >= m){ return; }
+      feedOne(b);
+    }));
+    ctx.maybeDemo([items[0]]);
+    const out = await done;
+    if(!ctx.alive()) return {aborted:true};
+    return {skill:'produce', firstTry:out.firstTry};
+  },
+
+  /* 谁的多: 比较 */
+  async compare(stage, ctx){
+    const it = ITEMS[ctx.item];
+    let {a, b} = ctx.params;
+    const [cA, cB] = ctx.pair;
+    const duel = el('div','duel', stage);
+    const sides = [];
+    const build = (charId, cnt) => {
+      const s = el('div','side', duel);
+      s.dataset.char = charId;
+      imgTag(charImg(charId), 'dchar', s);
+      const nm = el('div','hname', s); nm.textContent = CHARS[charId];
+      const plate = el('div','plate', s);
+      const its = [];
+      for(let i = 0; i < cnt; i++){
+        const w = el('div','item', plate); imgTag(itemImg(ctx.item), '', w); its.push(w);
+      }
+      sides.push({s, charId, cnt, its});
+      return s;
+    };
+    build(cA, a); build(cB, b);
+    const winner = sides[0].cnt > sides[1].cnt ? sides[0] : sides[1];
+    const loser  = winner === sides[0] ? sides[1] : sides[0];
+    stage.dataset.answer = winner.charId;
+    const intro = `${CHARS[cA]}和${CHARS[cB]}比一比！谁的${it.n}多？点一点${it.n}多的那个小伙伴！`;
+    App.setInstruction(intro); Speech.say(intro); ctx.nudge(intro);
+    ctx.maybeDemo([sides[0].its[0], sides[1].its[0]]);
+    let firstTry = true, lock = false;
+    await new Promise(res => {
+      sides.forEach(sd => sd.s.addEventListener('pointerdown', async e => {
+        if(e.isPrimary === false || !ctx.alive() || lock) return;
+        lock = true; Sfx.ensure(); ctx.touch();
+        if(sd === winner){
+          sd.s.classList.add('win'); Sfx.ding(); UI.confetti(stage, 16);
+          await Speech.say(`对啦！${CHARS[sd.charId]}的${it.n}多！${NUM_CN[winner.cnt]}比${NUM_CN[loser.cnt]}多！`);
+          res();
+        }else{
+          firstTry = false; Sfx.soft();
+          await Speech.say(`我们来数一数吧！`);
+          if(!ctx.alive()) return;
+          await Speech.say(`${CHARS[sides[0].charId]}的有…`); await demoCount(ctx, sides[0].its);
+          if(!ctx.alive()) return;
+          await Speech.say(`${CHARS[sides[1].charId]}的有…`); await demoCount(ctx, sides[1].its);
+          if(!ctx.alive()) return;
+          const line = `${NUM_CN[winner.cnt]}比${NUM_CN[loser.cnt]}多，${CHARS[winner.charId]}的多！点一点${CHARS[winner.charId]}吧！`;
+          await Speech.say(line); App.setInstruction(line);
+          lock = false;
+        }
+      }));
+    });
+    if(!ctx.alive()) return {aborted:true};
+    return {skill:'compare', firstTry};
+  },
+
+  /* 合起来: 合成（加法的概念本体） */
+  async compose(stage, ctx){
+    const {a, b} = ctx.params, it = ITEMS[ctx.item];
+    const [cA, cB] = ctx.pair;
+    const mkGrp = (charId, cnt, side) => {
+      const g = el('div','srcgrp', stage);
+      g.style.cssText = side === 'L' ? 'left:2%;top:16%' : 'right:2%;top:16%';
+      imgTag(charImg(charId), 'schar', g);
+      const box = el('div','sitems', g);
+      const its = [];
+      for(let i = 0; i < cnt; i++){
+        const w = el('button','item pop-in', box); imgTag(itemImg(ctx.item), '', w); its.push(w);
+      }
+      return its;
+    };
+    const itemsA = mkGrp(cA, a, 'L'), itemsB = mkGrp(cB, b, 'R');
+    const bar = el('div','slotbar', stage);
+    const slots = [];
+    for(let i = 0; i < a + b; i++) slots.push(el('div','slot', bar));
+    const intro = `${CHARS[cA]}有${qtyCN(a)}${it.cl}，${CHARS[cB]}有${qtyCN(b)}${it.cl}。把${it.n}都放到中间，合起来！`;
+    App.setInstruction(intro); Speech.say(intro); ctx.nudge(`点一点${it.n}，把它们放到中间吧！`);
+    let placed = 0;
+    const placedImgs = [];
+    ctx.maybeDemo([itemsA[0], bar]);
+    await new Promise(res => {
+      [...itemsA, ...itemsB].forEach(w => w.addEventListener('pointerdown', e => {
+        if(e.isPrimary === false || !ctx.alive() || w.classList.contains('dim')) return;
+        if(Speech.countBusy()){ UI.bump(w); return; }
+        ctx.touch();
+        w.classList.add('dim');
+        placed++;
+        Sfx.pop(); Speech.countSay(NUM_CN[placed]);
+        imgTag(itemImg(ctx.item), '', slots[placed - 1]);
+        placedImgs.push(slots[placed - 1]);
+        if(placed === a + b) ctx.after(700, res);
+      }));
+    });
+    if(!ctx.alive()) return {aborted:true};
+    const q = `合起来一共有几${it.cl}？`;
+    App.setInstruction(q); await Speech.say(q); ctx.nudge(q);
+    const {firstTry} = await askNumber(stage, ctx, {
+      correct:a + b, reask:`合起来一共有几${it.cl}呀？`,
+      doneLine:`${qtyCN(a)}${it.cl}和${qtyCN(b)}${it.cl}合起来，就是${qtyCN(a + b)}${it.cl}${it.n}！`,
+      demo:() => demoCount(ctx, placedImgs)
+    });
+    return {skill:'compose', firstTry};
+  },
+
+  /* 来了几个: 加法故事（先数全体） */
+  async add(stage, ctx){
+    const {a, b} = ctx.params, it = ITEMS[ctx.item];
+    const host = hostBox(stage, ctx.host, {small:true});
+    const field = el('div','field', stage);
+    const pos = scatterPositions(a + b);
+    const items = [];
+    const mk = (i, cls) => {
+      const w = el('button','item countable ' + cls, field);
+      w.style.left = pos[i].x + '%'; w.style.top = pos[i].y + '%';
+      imgTag(itemImg(ctx.item), '', w);
+      items.push(w); return w;
+    };
+    for(let i = 0; i < a; i++){ mk(i, 'pop-in').style.animationDelay = (i * .12) + 's'; }
+    await sayAs(host, `看！这里有${qtyCN(a)}${it.cl}${it.n}。`);
+    if(!ctx.alive()) return {aborted:true};
+    for(let i = a; i < a + b; i++){
+      const w = mk(i, '');
+      w.style.transition = 'none';
+      w.style.transform = 'translate(-50%,-50%) translateX(80vw)';
+      void w.offsetWidth;
+      w.style.transition = 'transform .5s';
+      w.style.transform = 'translate(-50%,-50%)';
+      Sfx.woosh();
+      await wait(320);
+      if(!ctx.alive()) return {aborted:true};
+    }
+    await sayAs(host, `又来了${qtyCN(b)}${it.cl}！`);
+    if(!ctx.alive()) return {aborted:true};
+    const cq = `现在一共有几${it.cl}${it.n}？点一点，数一数吧！`;
+    App.setInstruction(cq); sayAs(host, cq); ctx.nudge(cq, items[0]);
+    let counted = 0;
+    await new Promise(res => {
+      items.forEach(w => w.addEventListener('pointerdown', e => {
+        if(e.isPrimary === false || !ctx.alive()) return;
+        if(w.classList.contains('counted')){ UI.bump(w); return; }
+        if(Speech.countBusy()){ UI.bump(w); return; }
+        Sfx.pop(); counted++;
+        w.classList.add('counted');
+        const bd = el('span','cbadge', w); bd.textContent = counted;
+        Speech.countSay(NUM_CN[counted]);
+        ctx.touch();
+        if(counted === a + b) ctx.after(700, res);
+      }));
+    });
+    if(!ctx.alive()) return {aborted:true};
+    items.forEach(w => { const bd = w.querySelector('.cbadge'); if(bd){ bd.style.transition = 'opacity .5s'; bd.style.opacity = '0'; } });
+    const q = `一共有几${it.cl}呀？`;
+    App.setInstruction(q); await sayAs(host, q); ctx.nudge(q);
+    const {firstTry} = await askNumber(stage, ctx, {
+      correct:a + b, hostEl:host, reask:`一共有几${it.cl}呀？`,
+      doneLine:`${qtyCN(a)}${it.cl}加上${qtyCN(b)}${it.cl}，一共是${qtyCN(a + b)}${it.cl}${it.n}！`,
+      demo:() => demoCount(ctx, items)
+    });
+    return {skill:'add', firstTry};
+  }
+};
+
+/* ============ 10. 活动上下文（生命周期契约） ============ */
+class ActCtx {
+  constructor(world, type){
+    this.world = world; this.type = type;
+    this.sid = App.sessionId; this.aid = ++App.activityId;
+    this.timers = new Set();
+    this.lastTouch = Date.now();
+    this.nudges = 0;
+    // 角色/物品轮换: 让 36 个角色都持续登场
+    const rot = Store.data.rot, irot = Store.data.irot;
+    rot[world.id] = rot[world.id] || 0; irot[world.id] = irot[world.id] || 0;
+    this.host = world.chars[rot[world.id] % world.chars.length];
+    this.pair = [world.chars[rot[world.id] % world.chars.length],
+                 world.chars[(rot[world.id] + 1) % world.chars.length]];
+    rot[world.id] = (rot[world.id] + (type === 'compare' || type === 'compose' ? 2 : 1)) % 9999;
+    this.item = world.items[irot[world.id] % world.items.length];
+    irot[world.id] = (irot[world.id] + 1) % 9999;
+    Store.save();
+    this.params = Skills.gen(type);
+  }
+  alive(){ return this.sid === App.sessionId && App.currentCtx === this; }
+  after(ms, fn){ const id = setTimeout(() => { this.timers.delete(id); if(this.alive()) fn(); }, T(ms)); this.timers.add(id); return id; }
+  touch(){ this.lastTouch = Date.now(); }
+  /* 首遇此活动类型 → 幽灵手示范（可被孩子任意点击跳过, 不阻塞输入） */
+  maybeDemo(anchors){
+    if(QP.get('demo') === '0') return;
+    if(Store.data.seen[this.type]) return;
+    Store.data.seen[this.type] = true; Store.save();
+    const self = this;
+    setTimeout(() => { if(self.alive()) Ghost.run(self, anchors); }, T(1400));
+  }
+  nudge(text, demoAnchor){
+    // 轻声提醒: 9s 无操作且引擎空闲时重复当前指令, 最多2次; 第2次附带幽灵手指点（U3/U8）
+    this._nudgeText = text; this._nudgeAnchor = demoAnchor || null;
+    if(this._nudgeTimer) return;
+    const iv = setInterval(() => {
+      if(!this.alive()){ clearInterval(iv); return; }
+      if(this.nudges >= 2) { clearInterval(iv); return; }
+      if(Date.now() - this.lastTouch > T(9000)){
+        this.nudges++; this.lastTouch = Date.now();
+        Speech.politeSay(this._nudgeText);
+        if(this.nudges >= 2 && this._nudgeAnchor && this._nudgeAnchor.isConnected){
+          Ghost.run(this, [this._nudgeAnchor]);
+        }
+      }
+    }, T(3000));
+    this._nudgeTimer = iv; this.timers.add(iv);
+  }
+  dispose(){
+    for(const id of this.timers){ clearTimeout(id); clearInterval(id); }
+    this.timers.clear();
+  }
+}
+
+/* ============ 11. App（场景与会话流） ============ */
+const App = {
+  sessionId:0, activityId:0, currentCtx:null, currentWorld:null,
+  transitioning:false, lastInstruction:null,
+  _abortResolve:null,
+
+  init(){
+    Store.load();
+    document.body.classList.toggle('calm', Store.data.calm);
+    Speech.init();
+    // 启动页角色
+    ['wukong','peppa','chase','bluey'].forEach(c => imgTag(charImg(c), '', $('#bootChars')));
+    $('#starImg').src = itemImg('star');
+    $('#mapBg').src = 'assets/bg/bg_sky.png';
+    UI.syncStars();
+    this.buildMap();
+    // 军规1: 入口按钮 click 事件, 同步栈内首次 speak
+    $('#btnStart').addEventListener('click', () => {
+      Sfx.unlock();
+      Speech.unlock('嗨！欢迎来到数字小英雄乐园！点一个小岛，我们一起去玩吧！');
+      this.toMap();
+    });
+    // 回家: 两次点按确认（U2 防误触; 命中框≥88px 但视觉弱化）
+    $('#btnHome').addEventListener('pointerdown', e => {
+      if(e.isPrimary === false) return;
+      Sfx.ensure(); Sfx.pop();
+      const b = $('#btnHome');
+      if(b.classList.contains('armed')){ b.classList.remove('armed'); this.abortToMap(); return; }
+      b.classList.add('armed');
+      Speech.say('再按一下，就回小岛地图哦！');
+      setTimeout(() => b.classList.remove('armed'), 2600);
+    });
+    $('#btnReplay').addEventListener('pointerdown', () => {
+      Sfx.ensure();
+      if(this.lastInstruction && this.lastInstruction.sid === this.sessionId){
+        Speech.say(this.lastInstruction.text);      // 重听: 安全打断通道
+      }
+    });
+    $('#nosound').addEventListener('click', () => {
+      Sfx.unlock();
+      try{ speechSynthesis.resume(); }catch(e){}
+      UI.hideNoSound();
+      const txt = (this.lastInstruction && this.lastInstruction.sid === this.sessionId)
+        ? this.lastInstruction.text : Speech.welcomeText;
+      Speech.say(txt);
+      setTimeout(() => { if(!Speech.everWorked) UI.showNoSound(); }, 3500);
+    });
+    Parent.init();
+    // PWA
+    if('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost','127.0.0.1'].includes(location.hostname))){
+      addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('dblclick', e => e.preventDefault());
+  },
+
+  buildMap(){
+    const g = $('#mapGrid');
+    WORLDS.forEach(w => {
+      const b = el('button','island', g);
+      b.dataset.world = w.id;
+      imgTag(`assets/bg/isl_${w.id}.png`, 'isl', b);
+      imgTag(charImg(w.chars[0]), 'ihost', b);
+      const nm = el('div','iname', b); nm.textContent = w.name;
+      b.addEventListener('pointerdown', () => {
+        if(this.transitioning) return;
+        this.transitioning = true;
+        Sfx.ensure(); Sfx.pop(); UI.bump(b);
+        Speech.say(`去${w.name}喽！`);
+        setTimeout(() => { this.transitioning = false; this.playWorld(w); }, T(700));
+      });
+    });
+  },
+
+  show(id){
+    document.querySelectorAll('.scene').forEach(s => s.classList.remove('on'));
+    $('#' + id).classList.add('on');
+    document.body.dataset.scene = id;
+  },
+
+  setInstruction(text){ this.lastInstruction = {text, sid:this.sessionId}; },
+
+  toMap(){
+    this.sessionId++;
+    if(this.currentCtx){ this.currentCtx.dispose(); this.currentCtx = null; }
+    const st = $('#stage');
+    st.innerHTML = '';                             // 卸载 DOM + 解码位图
+    delete st.dataset.activity; delete st.dataset.answer;
+    $('#cele').classList.remove('on'); $('#cele').innerHTML = '';
+    this.currentWorld = null;
+    UI.syncStars();
+    this.show('sceneMap');
+  },
+
+  abortToMap(){
+    Speech.stopAll();
+    if(this._abortResolve){ this._abortResolve({aborted:true}); this._abortResolve = null; }
+    this.toMap();
+  },
+
+  async playWorld(world){
+    const sid = ++this.sessionId;
+    this.currentWorld = world;
+    $('#playBg').src = `assets/bg/bg_${world.id}.png`;
+    $('#stage').innerHTML = '';
+    const dots = $('#dots'); dots.innerHTML = '';
+    for(let i = 0; i < 5; i++) el('i','', dots);
+    this.show('scenePlay');
+    Speech.say(`欢迎来到${world.name}！`);
+    const abortP = new Promise(r => { this._abortResolve = r; });
+    const plan = Skills.plan();
+    await wait(900);
+    for(let i = 0; i < plan.length; i++){
+      if(sid !== this.sessionId) return;
+      const res = await Promise.race([this.runOne(plan[i], world), abortP]);
+      if(!res || res.aborted || sid !== this.sessionId) return;
+      Skills.record(res.skill, res.firstTry);
+      Store.data.stars++; Store.save();
+      dots.children[i].classList.add('done');
+      UI.starFly();
+      await wait(500);
+      UI.syncStars();
+      if(sid !== this.sessionId) return;
+      await wait(600);
+    }
+    if(sid !== this.sessionId) return;
+    await this.bigCele(world, sid);
+    if(sid !== this.sessionId) return;
+    this._abortResolve = null;
+    this.toMap();
+  },
+
+  async runOne(type, world){
+    const stage = $('#stage');
+    stage.innerHTML = '';
+    delete stage.dataset.answer;
+    const ctx = new ActCtx(world, type);
+    this.currentCtx = ctx;
+    stage.dataset.activity = type;
+    let out;
+    try{ out = await Activities[type](stage, ctx); }
+    catch(e){ console.error('activity error', e); out = {aborted:true}; }
+    ctx.dispose();
+    return out;
+  },
+
+  async bigCele(world, sid){
+    const cele = $('#cele');
+    cele.innerHTML = '';
+    const card = el('div','cele-card', cele);
+    imgTag(itemImg('star'), 'cele-star', card);
+    const t = el('div','cele-title', card); t.textContent = '太棒啦！';
+    const row = el('div','cele-chars', card);
+    // 拥挤控制(V6): 同屏庆祝角色 ≤6, 多于6个的岛每次随机换一批
+    const dancers = world.chars.length > 6 ? shuffle(world.chars).slice(0, 6) : world.chars;
+    dancers.forEach((c, i) => { imgTag(charImg(c), '', row).style.animationDelay = (i * .12) + 's'; });
+    cele.classList.add('on');
+    UI.confetti(cele, 36);
+    Sfx.yay();
+    Speech.say(`哇！太棒啦！你帮${world.name}的朋友们解决了所有问题，大家都为你欢呼！`);
+    await new Promise(res => {
+      const done = () => res();
+      cele.addEventListener('pointerdown', done, {once:true});
+      setTimeout(done, T(5200));
+    });
+    if(sid !== this.sessionId) return;
+    cele.classList.remove('on'); cele.innerHTML = '';
+  }
+};
+
+/* ============ 12. 家长面板 ============ */
+const Parent = {
+  init(){
+    this.bindLongPress($('#gearMap'));
+    this.bindLongPress($('#gearBoot'));
+  },
+  bindLongPress(btn){
+    if(!btn) return;
+    let t = null;
+    const arm = () => {
+      btn.style.opacity = '1';
+      t = setTimeout(() => { t = null; this.open(); }, 3000);   // 长按 3s 防孩子误入
+    };
+    const disarm = () => { btn.style.opacity = '.65'; if(t){ clearTimeout(t); t = null; } };
+    btn.addEventListener('pointerdown', arm);
+    btn.addEventListener('pointerup', disarm);
+    btn.addEventListener('pointercancel', disarm);
+    btn.addEventListener('pointerleave', disarm);
+  },
+  open(){
+    const p = $('#parent'), b = $('#ppBody');
+    const d = Speech.diag(), s = Store.data.skills;
+    const skillName = {count:'点数', numeral:'认数字', produce:'按数取物', flash:'感数', compare:'比多少', compose:'合成', add:'加法'};
+    b.innerHTML = `
+      <h2>家长面板 <span style="font-size:12px;color:#889">v${KM_VERSION}</span></h2>
+      <h3>学习进度</h3>
+      <div>${Object.keys(s).map(k => `<span class="skl">${skillName[k]} · 等级${s[k].lvl} · 独立完成${s[k].wins}次</span>`).join('')}</div>
+      <div class="row">⭐ 星星总数：<b>${Store.data.stars}</b></div>
+      <h3>难度范围</h3>
+      <div class="row">
+        <select id="ppDiff">
+          <option value="auto">自动（跟随孩子表现）</option>
+          <option value="1">宝宝档（1–3）</option>
+          <option value="2">进阶档（1–5）</option>
+          <option value="3">挑战档（1–10）</option>
+        </select>
+      </div>
+      <h3>语音诊断</h3>
+      <div class="diag">支持TTS: ${d.supported} ｜ 已解锁: ${d.unlocked} ｜ 曾出声: ${d.everWorked}<br>
+      系统声音数: ${d.voicesTotal} ｜ 中文声音: ${d.zhVoices.length ? d.zhVoices.join('、') : '（无）'}<br>
+      当前所选: ${d.chosen}<br>
+      speaking: ${d.speaking} ｜ pending: ${d.pending}</div>
+      <div class="row">
+        <button id="ppTest">🔊 测试发声</button>
+        <button id="ppRelock" class="ghost">重新解锁音频</button>
+      </div>
+      <div class="row"><label>选择声音：</label><select id="ppVoice"><option value="">自动</option></select></div>
+      <h3>其他</h3>
+      <div class="row">
+        <label><input type="checkbox" id="ppCalm" ${Store.data.calm ? 'checked' : ''}> 减少动画效果</label>
+        <label><input type="checkbox" id="ppKeep" ${Store.data.keepAlive ? 'checked' : ''}> 无声保活音频（绕过静音开关, 实验性）</label>
+      </div>
+      <div class="row">
+        <button id="ppReset" class="warn">重置全部进度</button>
+        <button id="ppClose" class="ghost">关闭</button>
+      </div>`;
+    $('#ppDiff').value = Store.data.diff;
+    $('#ppDiff').addEventListener('change', e => { Store.data.diff = e.target.value; Store.save(); });
+    const vs = $('#ppVoice');
+    Speech.voices.filter(v => /^zh/i.test(v.lang)).forEach(v => {
+      const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = `${v.name} (${v.lang})`;
+      if(Store.data.voiceURI === v.voiceURI) o.selected = true;
+      vs.appendChild(o);
+    });
+    vs.addEventListener('change', e => { Store.data.voiceURI = e.target.value || null; Store.save(); Speech.pickVoice(); });
+    $('#ppTest').addEventListener('click', () => { Sfx.unlock(); Speech.say('你好呀！我是数字小英雄，能听到我说话吗？'); });
+    $('#ppRelock').addEventListener('click', () => { Sfx.unlock(); try{ speechSynthesis.resume(); }catch(e){} Speech.say('音频已经重新打开啦！'); UI.toast('已尝试重新解锁音频'); });
+    $('#ppCalm').addEventListener('change', e => {
+      Store.data.calm = e.target.checked; Store.save();
+      document.body.classList.toggle('calm', Store.data.calm);
+    });
+    $('#ppKeep').addEventListener('change', e => {
+      Store.data.keepAlive = e.target.checked; Store.save();
+      if(!e.target.checked) Sfx.stopKeepAlive(); else Sfx.unlock();
+    });
+    $('#ppReset').addEventListener('click', () => {
+      if(confirm('确定重置全部学习进度和星星吗？')){ Store.reset(); UI.syncStars(); this.open(); }
+    });
+    $('#ppClose').addEventListener('click', () => p.classList.remove('on'));
+    p.classList.add('on');
+  }
+};
+
+/* ============ 13. 测试钩子 ============ */
+window.__KM = {
+  version:KM_VERSION, App, Store, Speech, Sfx, Skills, FAST,
+  speechLog:() => Speech.log
+};
+
+/* ============ boot ============ */
+App.init();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "数字小英雄",
+  "short_name": "数字小英雄",
+  "description": "帮 3-4 岁孩子真正理解数字与加法的互动乐园",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#8ed1ff",
+  "theme_color": "#8ed1ff",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+tools/raw_backup/
+tools/logs/
+review/shots/
+review/*.log
