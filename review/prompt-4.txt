@@ -1,0 +1,12 @@
+第四轮审查（修复复核）。你第三轮给出 REJECT（3 个 P0、7 个 P1、4 个 P2 及"进入下一轮的最低条件"）。项目方已提交修复与证据：
+
+1) review/RESPONSE-3.md——对你全部编号问题的逐条处置（含代码位置说明）；
+2) 修复后的 index.html / sw.js / tools/qa_assets.py / tests/run_tests.py / DESIGN.md（正文与 §9 已合并）；
+3) review/test_run6.log——加强后的 Playwright 套件 ALL GREEN（T1 六岛全走查+每活动 88px 尺寸审计+比较侧位平衡断言；T3 真实鼠标坐标连点压力；T4 离线整岛 5 活动；T5 竖屏解锁全类型 3 岛矩阵；T6 动画开启真实命中）；
+4) review/shots/ 全部重拍（含竖屏 compare、compose、flash、produce、add）；
+5) 甲方追加需求已实施：英雄城新增 蜘蛛侠/迈尔斯/格温 三角色（官方形象被生成模型拒绝, 按既定三层策略交付致敬版, 中文语音名保留官方名; 见 review/spiders.png 与更新的 review/sheet_chars.png, 现共 39 角色）；
+6) 葫芦山背景已重生成（零葫芦零果实, 只有藤叶, 见 assets/bg/bg_hulu.png）。
+
+请逐条核验 P0-01/02/03、P1-01..07、P2-01..04 是否真实闭合（读代码验证, 不要只看回应文档）；对"承认的残余限制"（比较活动的纯视觉表达、被吞重试的有界重复、贴纸白描边 ADVISORY、blackwidow 贴边误报）评估其接受理由是否成立。若发现新问题按 P0/P1/P2 编号（注意: 真机 iPad 冒烟属交付阶段由家长执行; IP 最终处置与部署确认是甲方决策门; 这两类不作为否决理由）。
+
+最后一行必须是 VERDICT: APPROVE 或 VERDICT: REJECT。

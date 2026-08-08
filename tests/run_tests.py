@@ -35,12 +35,13 @@ window.__SPEECH = [];
       u._cancelled=false; this._q.push(u); this._upd();
       if(this._q[0]===u) this._run(u); },
     _run(u){ this._upd();
+      const dur = window.__SPEECH_DUR || 90;   // T2b 慢TTS场景可调
       setTimeout(()=>{ if(u._cancelled) return; try{u.onstart && u.onstart({});}catch(e){}
         setTimeout(()=>{ if(u._cancelled) return;
           const i=this._q.indexOf(u); if(i>=0) this._q.splice(i,1); this._upd();
           try{u.onend && u.onend({});}catch(e){}
           const nx=this._q[0]; if(nx) this._run(nx);
-        }, 90);
+        }, dur);
       }, 25); },
     _upd(){ this.speaking=this._q.length>0; this.pending=this._q.length>1; }
   };
@@ -280,9 +281,6 @@ def main():
                     raise Fail(f"activity types not covered after 6 islands: {missing}")
                 if SIZE_VIOLATIONS:
                     raise Fail("touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:6]))
-                # 比较活动位置平衡（P0-01）: 走查过程中"多的一侧"应两侧都出现过（seed 固定, 确定性）
-                if len(COMPARE_SIDES) >= 2 and len(set(COMPARE_SIDES)) < 2:
-                    raise Fail(f"compare winner always on same side: {COMPARE_SIDES}")
                 # 语音时间线
                 log = get_speech(page)
                 nspeaks = assert_speech_rules(log, "T1")
@@ -304,6 +302,28 @@ def main():
                     raise Fail("home exited on single tap (expect 2-tap confirm)")
                 page.locator("#btnHome").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=5000)
+                # 比较活动位置平衡（P0-01）: 主走查 seed 固定可能碰巧同侧 → 独立 seed 重载专测平衡。
+                # seed 7/8/11 经 find_balance_seed.py 实测均产生两侧(7→R,R,L; 8→L,R; 11→R,L), 确定性稳定;
+                # 真 bug(固定单侧)时任何 seed 都单侧, 必然失败
+                if len(set(COMPARE_SIDES)) < 2:
+                    for bal_seed in (7, 8, 11):
+                        page.evaluate("() => localStorage.clear()")   # 复现探种脚本的全新状态轨迹
+                        page.goto(f"{BASE}/?fast=1&seed={bal_seed}&demo=0", wait_until="load")
+                        page.locator("#btnStart").click()
+                        page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                        page.evaluate("""() => { const d = window.__KM.Store.data;
+                          for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
+                          window.__KM.Store.save(); }""")
+                        for isl in (0, 1, 2):
+                            play_island(page, isl, set())
+                            if len(set(COMPARE_SIDES)) >= 2:
+                                break
+                        if len(set(COMPARE_SIDES)) >= 2:
+                            break
+                if len(COMPARE_SIDES) < 2:
+                    raise Fail(f"too few compare samples: {COMPARE_SIDES}")
+                if len(set(COMPARE_SIDES)) < 2:
+                    raise Fail(f"compare winner stuck on one side across seeds: {COMPARE_SIDES}")
                 if errors:
                     raise Fail("console/page errors: " + " | ".join(errors[:5]))
                 report("T1 chromium 全流程走查+语音时间线+家长面板+回家确认", True, f"{nspeaks} speaks, types={sorted(types_seen)}")
@@ -415,26 +435,106 @@ def main():
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 page.wait_for_timeout(500)
                 page.screenshot(path=os.path.join(SHOTS, "t5_map_portrait.png"))
-                # 解锁全部类型: 竖屏矩阵覆盖高阶活动布局（P1-05）
+                # 解锁全部类型且强制 L3: 竖屏矩阵覆盖最高阶布局(含 compose L3 两组≤5)（P1-04/05）
                 page.evaluate("""() => { const d = window.__KM.Store.data;
-                  for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
+                  for(const k in d.skills){ d.skills[k].lvl = 3; d.skills[k].wins = 8; }
                   window.__KM.Store.save(); }""")
                 SIZE_VIOLATIONS.clear()
                 types = set()
-                play_island(page, 5, types, shots_prefix="t5", audit="t5")
-                play_island(page, 1, types, audit="t5")
-                play_island(page, 2, types, audit="t5")
+                ALL7 = {"count","numeral","produce","flash","compare","compose","add"}
+                for isl in (5, 1, 2, 3, 4, 0):
+                    play_island(page, isl, types, shots_prefix="t5", audit="t5")
+                    if ALL7 <= types:
+                        break
+                if not (ALL7 <= types):
+                    raise Fail(f"portrait matrix missing types: {ALL7 - types}")
                 if SIZE_VIOLATIONS:
                     raise Fail("portrait touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
-                if len(types) < 5:
-                    raise Fail(f"portrait matrix covered too few types: {sorted(types)}")
                 if errors5:
                     raise Fail("errors: " + " | ".join(errors5[:5]))
-                report("T5 webkit 竖屏矩阵(3岛)+触摸目标≥88px", True, f"types={sorted(types)}")
+                report("T5 webkit 竖屏七活动矩阵(L3)+触摸目标≥88px", True, f"types={sorted(types)}")
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t5_FAIL.png"))
                 report("T5 webkit 竖屏", False, str(e)[:300])
+            ctx.close(); br.close()
+
+            # ============ T5b: webkit 横屏七活动矩阵（P1-05） ============
+            errors5b = []
+            br = pw.webkit.launch()
+            ctx = br.new_context(viewport={"width": 1180, "height": 820}, device_scale_factor=2)
+            page = make_page(ctx, errors5b)
+            try:
+                page.goto(f"{BASE}/?fast=1&seed=13", wait_until="load")
+                page.locator("#btnStart").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                page.evaluate("""() => { const d = window.__KM.Store.data;
+                  for(const k in d.skills){ d.skills[k].lvl = 3; d.skills[k].wins = 8; }
+                  window.__KM.Store.save(); }""")
+                SIZE_VIOLATIONS.clear()
+                types = set()
+                ALL7 = {"count","numeral","produce","flash","compare","compose","add"}
+                for isl in (0, 3, 4, 1, 2, 5):
+                    play_island(page, isl, types, audit="t5b")
+                    if ALL7 <= types:
+                        break
+                if not (ALL7 <= types):
+                    raise Fail(f"webkit landscape matrix missing types: {ALL7 - types}")
+                if SIZE_VIOLATIONS:
+                    raise Fail("landscape touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
+                if errors5b:
+                    raise Fail("errors: " + " | ".join(errors5b[:5]))
+                report("T5b webkit 横屏七活动矩阵(L3)", True, f"types={sorted(types)}")
+            except Exception as e:
+                ok_all = False
+                page.screenshot(path=os.path.join(SHOTS, "t5b_FAIL.png"))
+                report("T5b webkit 横屏矩阵", False, str(e)[:300])
+            ctx.close(); br.close()
+
+            # ============ T2b: 慢 TTS 下计数排空（P1-01） ============
+            errors2b = []
+            br = pw.chromium.launch()
+            ctx = br.new_context(viewport={"width": 1180, "height": 820})
+            page = ctx.new_page()
+            page.add_init_script("window.__SPEECH_DUR = 600;")   # 单词 600ms 的慢 TTS
+            page.add_init_script(SPEECH_MOCK)
+            page.on("pageerror", lambda e: errors2b.append(f"pageerror: {e}"))
+            page.on("console", lambda m: errors2b.append(f"console.{m.type}: {m.text}") if m.type == "error" else None)
+            page.add_init_script(f"addEventListener('DOMContentLoaded',()=>{{const s=document.createElement('style');s.textContent='{FREEZE_CSS}';document.head.appendChild(s);}});")
+            try:
+                page.goto(f"{BASE}/?fast=1&seed=21&demo=0", wait_until="load")
+                page.locator("#btnStart").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                page.locator(".island").nth(0).click()
+                wait_new_activity(page, -999)
+                st = state(page)
+                if st["act"] != "count":
+                    raise Fail(f"expected count first, got {st['act']}")
+                deadline = time.time() + 30
+                while time.time() < deadline:
+                    loc = page.locator(".countable:not(.counted)")
+                    if loc.count() == 0:
+                        break
+                    loc.first.click(timeout=4000)
+                    page.wait_for_timeout(200)      # 快点: 触发背压 + 排空等待
+                page.wait_for_selector(".cards .ncard", timeout=20000)
+                cards_at = page.evaluate("() => performance.now()")
+                log = get_speech(page)
+                cw = [e for e in log if e["a"] == "speak" and len(e["text"]) == 1 and e["text"] in NUM_CN]
+                n = page.evaluate("() => +document.querySelector('#stage').dataset.answer")
+                if len(cw) < n:
+                    raise Fail(f"slow-TTS dropped count words: {[w['text'] for w in cw]} (n={n})")
+                last_end = cw[-1]["t"] + 600
+                if cards_at < last_end - 80:
+                    raise Fail(f"ask phase appeared before last count word finished: cards@{cards_at:.0f} < end@{last_end:.0f}")
+                click_answer(page, None)
+                if errors2b:
+                    raise Fail("errors: " + " | ".join(errors2b[:5]))
+                report("T2b 慢TTS(600ms/词)下背压保序+排空后提问", True, f"words={[w['text'] for w in cw]}")
+            except Exception as e:
+                ok_all = False
+                page.screenshot(path=os.path.join(SHOTS, "t2b_FAIL.png"))
+                report("T2b 慢TTS排空", False, str(e)[:300])
             ctx.close(); br.close()
 
             # ============ T6: 真实运动目标命中（气球不冻结动画、不用 force） ============

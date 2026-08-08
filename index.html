@@ -118,6 +118,12 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .flyer{position:fixed;z-index:60;pointer-events:none;transition:transform .5s cubic-bezier(.35,.9,.55,1),opacity .5s}
 
 /* compare */
+.taskcard{position:absolute;top:max(2vmin,env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:rgba(255,255,255,.92);border-radius:3vmin;padding:1.2vmin 2.4vmin;display:flex;align-items:center;gap:2.4vmin;z-index:24;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.2)}
+.taskcard .pile{display:grid;grid-template-columns:repeat(3,1fr);gap:.5vmin;padding:.8vmin;border-radius:1.6vmin}
+.taskcard .pile i{width:1.8vmin;height:1.8vmin;min-width:9px;min-height:9px;border-radius:50%;background:#f59f00;border:.3vmin solid #e8590c}
+.taskcard .pile.big{outline:.6vmin solid #37b24d;outline-offset:.4vmin;background:#ebfbee;position:relative}
+.taskcard .pile.big::after{content:"👆";position:absolute;bottom:-3.6vmin;left:50%;transform:translateX(-50%);font-size:3vmin}
+.crown{position:absolute;top:-7vmin;left:50%;transform:translateX(-50%);width:9vmin;min-width:52px;z-index:8;animation:popin .4s,idlebob 1.6s .4s ease-in-out infinite}
 .duel{position:absolute;inset:10% 2% 6%;display:flex;gap:2%;z-index:4}
 .duel .side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border-radius:4vmin;transition:transform .15s;padding-bottom:1vmin}
 .duel .side:active{transform:scale(.96)}
@@ -133,6 +139,12 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .slot img{width:88%;height:88%;object-fit:contain;animation:popin .25s}
 .srcgrp{position:absolute;display:flex;flex-direction:column;align-items:center;z-index:4}
 .srcgrp .schar{width:19vmin;height:auto}
+@media (orientation:portrait){
+  .srcgrp{top:6%!important}
+  .srcgrp .schar{width:13vmin}
+  .srcgrp .sitems{max-width:36vmin}
+  .slotbar{top:56%}
+}
 .srcgrp .sitems{display:flex;flex-wrap:wrap;gap:1vmin;justify-content:center;max-width:30vmin;margin-top:.6vmin}
 .srcgrp .item{position:relative;transform:none;width:11.5vmin;height:11.5vmin;min-width:88px;min-height:88px}
 
@@ -293,13 +305,19 @@ const Store = {
     try{ d = JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ d = null; }
     const base = this.defaults();
     if(d && d.v === 1 && d.skills){
-      for(const k in base.skills){ base.skills[k] = Object.assign(base.skills[k], d.skills[k] || {}); }
-      base.stars = (typeof d.stars === 'number' && d.stars >= 0) ? d.stars : 0;
+      // 技能字段逐项数值域校验（P2-02）: lvl∈[1,3]整数, 计数字段为非负整数
+      const nint = (v, lo, hi, dflt) => (Number.isInteger(v) && v >= lo && v <= hi) ? v : dflt;
+      for(const k in base.skills){
+        const s = d.skills[k] || {};
+        base.skills[k] = { lvl: nint(s.lvl, 1, 3, 1), up: nint(s.up, 0, 99, 0),
+          down: nint(s.down, 0, 99, 0), wins: nint(s.wins, 0, 1e6, 0), tries: nint(s.tries, 0, 1e6, 0) };
+      }
+      base.stars = nint(d.stars, 0, 1e9, 0);
       base.diff = ['auto','1','2','3'].includes(d.diff) ? d.diff : 'auto';
       base.voiceURI = (typeof d.voiceURI === 'string') ? d.voiceURI : null;
       // 结构校验（P2-02）: rot/irot 仅接受数值表, seen 仅接受布尔真值表
       const numMap = o => { const r = {};
-        if(o && typeof o === 'object' && !Array.isArray(o)) for(const k in o){ if(typeof o[k] === 'number' && isFinite(o[k])) r[k] = o[k]; }
+        if(o && typeof o === 'object' && !Array.isArray(o)) for(const k in o){ if(Number.isInteger(o[k]) && o[k] >= 0 && o[k] < 1e6) r[k] = o[k]; }
         return r; };
       base.rot = numMap(d.rot); base.irot = numMap(d.irot);
       const seen = {};
@@ -349,8 +367,8 @@ const Speech = {
       if(!document.hidden){ try{ speechSynthesis.resume(); }catch(e){} }
     });
     window.addEventListener('pageshow', () => {
-      // bfcache 恢复: 清计数队列(§9.6), resume 引擎
-      this._countQ.length = 0; this._latestCount = null;
+      // bfcache 恢复: 全量清场（含底层引擎队列, 带180ms冷却窗）+ resume（§9.6）
+      this.stopAll();
       try{ speechSynthesis.resume(); }catch(e){}
     });
   },
@@ -424,8 +442,12 @@ const Speech = {
     const gen = this._gen;
     let settled = false, started = false;
     this._instrActive = !opts.isCount;
+    if(opts.isCount) this._activeCountSay = (this._activeCountSay || 0) + 1;  // drain 追踪 say 通道数词（P1-01）
     if(!opts.isCount) Sfx.duck(true);              // 语音期间音效闪避（U7）
-    const finish = () => { if(!settled){ settled = true; if(!opts.isCount){ this._instrActive = false; Sfx.duck(false); } this._release(u); res(); } };
+    const finish = () => { if(!settled){ settled = true;
+      if(!opts.isCount){ this._instrActive = false; Sfx.duck(false); }
+      else { this._activeCountSay = Math.max(0, (this._activeCountSay || 1) - 1); }
+      this._release(u); res(); } };
     u.onstart = () => { started = true; this._markWork(); };
     u.onboundary = () => { started = true; this._markWork(); };
     u.onend = () => { this._markWork(); finish(); };
@@ -478,23 +500,21 @@ const Speech = {
     if(this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount) return true;
     return false;
   },
-  /* 计数队列排空（P1-01）: 末数播完再进入提问, 不用固定延时猜测 */
+  /* 计数队列排空（P1-01）: 末数播完(或有界看门狗到期)再进入提问。
+     覆盖三处在途数词: 自然队列 _countQ / cancel 等待窗内的 pending count / say 通道在播的 isCount */
   drain(maxMs){
     const deadline = Date.now() + (maxMs || 4000);
     return new Promise(res => {
       const chk = () => {
         this._countQ = this._countQ.filter(q => !q.done);
-        const busyCount = this._countQ.length > 0 || (this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount);
+        const busyCount = this._countQ.length > 0
+          || (this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount)
+          || (this._activeCountSay || 0) > 0;
         if(!busyCount || Date.now() > deadline) res();
         else setTimeout(chk, 120);
       };
       chk();
     });
-  },
-  /* 活动切换语境（I10/§9.6）: 过期回调/重试/兜底全部退休, 不打断当前语音 */
-  newContext(){
-    this._gen++;
-    this._latestCount = null;
   },
   _enqCount(word){
     let u;
@@ -521,12 +541,19 @@ const Speech = {
   stopAll(){
     this._gen++;
     this._instrActive = false;
+    this._activeCountSay = 0;
     Sfx.duck(false);
     if(this._pend){ this._pend.res(); this._pend = null; }
     if(this._cancelT){ clearTimeout(this._cancelT); this._cancelT = null; }
     this._countQ.length = 0; this._latestCount = null;
     try{ speechSynthesis.cancel(); }catch(e){}
     this.lastReq = Date.now();                      // 冷却 1.5s, 抑制 polite 兜底
+    // 军规2: cancel 后 180ms 冷却窗——期间到来的 say() 走 _pend 排队而不是立即 speak
+    this._cancelT = setTimeout(() => {
+      this._cancelT = null;
+      const p = this._pend; this._pend = null;
+      if(p) this._speakNow(p.text, p.opts, p.res);
+    }, 180);
   },
 
   diag(){
@@ -547,6 +574,7 @@ const Sfx = {
     try{
       const AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return;
+      if(this.ctx && this.ctx.state === 'closed'){ this.ctx = null; this.master = null; }  // closed 不可恢复 → 重建（I10）
       if(!this.ctx){
         this.ctx = new AC();
         this.master = this.ctx.createGain(); this.master.gain.value = .5;
@@ -670,9 +698,10 @@ const Skills = {
         return {a: big, b: small};
       }
       case 'compose':{
-        // L3 上限 8: 保证 88px 源物品在竖屏也放得下（P1-04）
+        // L3 总数≤8 且两组各≤5: 88px 源物品竖屏两列布局的可容纳上界（P1-04）
         const total = L === 1 ? 3 + ri(2) : L === 2 ? 5 : 6 + ri(3);
-        const a = 1 + ri(total - 1);
+        const lo = Math.max(1, total - 5), hi = Math.min(5, total - 1);
+        const a = lo + ri(hi - lo + 1);
         return {a, b: total - a};
       }
       case 'add':{
@@ -1111,8 +1140,12 @@ const Activities = {
     const winner = sides[0].cnt > sides[1].cnt ? sides[0] : sides[1];
     const loser  = winner === sides[0] ? sides[1] : sides[0];
     stage.dataset.answer = winner.charId;
+    // 非语音任务表达（P0-03）: 固定抽象图示卡——两堆点点, 大堆带绿圈+手指(不对应本题实际数量, 表意"选多的一边")
+    const tc = el('div','taskcard', stage);
+    const mkPile = (cnt, big) => { const p = el('div','pile' + (big ? ' big' : ''), tc); for(let i = 0; i < cnt; i++) el('i','',p); };
+    if(rng() < .5){ mkPile(6, true); mkPile(2, false); } else { mkPile(2, false); mkPile(6, true); }
     const intro = `${CHARS[cA]}和${CHARS[cB]}比一比！谁的${it.n}多？点一点${it.n}多的那个小伙伴！`;
-    App.setInstruction(intro); Speech.say(intro); ctx.nudge(intro);
+    App.setInstruction(intro); Speech.say(intro); ctx.nudge(intro, winner.s);
     ctx.maybeDemo([sides[0].its[0], sides[1].its[0]]);
     let firstTry = true, lock = false;
     await new Promise(res => {
@@ -1131,6 +1164,12 @@ const Activities = {
           if(!ctx.alive()) return;
           await Speech.say(`${CHARS[sides[1].charId]}的有…`); await demoCount(ctx, sides[1].its);
           if(!ctx.alive()) return;
+          // 视觉胜者标识（P0-03）: 星星悬于多的一侧角色头顶 + 该侧放大
+          if(!winner.s.querySelector('.crown')){
+            const cr = imgTag(itemImg('star'), 'crown', winner.s);
+            winner.s.style.position = 'relative';
+          }
+          winner.s.classList.remove('win'); void winner.s.offsetWidth; winner.s.classList.add('win');
           const line = `${NUM_CN[winner.cnt]}比${NUM_CN[loser.cnt]}多，${CHARS[winner.charId]}的多！点一点${CHARS[winner.charId]}吧！`;
           await Speech.say(line); App.setInstruction(line);
           lock = false;
@@ -1282,8 +1321,9 @@ class ActCtx {
     setTimeout(() => { if(self.alive()) Ghost.run(self, anchors); }, T(1400));
   }
   nudge(text, demoAnchor){
-    // 轻声提醒: 9s 无操作且引擎空闲时重复当前指令, 最多2次; 第2次附带幽灵手指点（U3/U8）
-    this._nudgeText = text; this._nudgeAnchor = demoAnchor || null;
+    // 轻声提醒: 9s 无操作且引擎空闲时重复当前指令, 最多2次; 第2次附带幽灵手指点（U3/U8）。
+    // 语音逐字重播＝无障碍重复(不含解信息, 不降级 outcome); 幽灵手指点＝脚手架(置 assisted)。见 DESIGN §9.1。
+    this._nudgeText = text; this._nudgeAnchor = demoAnchor || this._nudgeAnchor || null;
     if(this._nudgeTimer) return;
     const iv = setInterval(() => {
       if(!this.alive()){ clearInterval(iv); return; }
@@ -1291,9 +1331,10 @@ class ActCtx {
       if(Date.now() - this.lastTouch > T(9000)){
         this.nudges++; this.lastTouch = Date.now();
         Speech.politeSay(this._nudgeText);
-        if(this.nudges >= 2 && this._nudgeAnchor && this._nudgeAnchor.isConnected){
-          this.assisted = true;
-          Ghost.run(this, [this._nudgeAnchor]);
+        if(this.nudges >= 2){
+          const a = (this._nudgeAnchor && this._nudgeAnchor.isConnected) ? this._nudgeAnchor
+                  : document.querySelector('#stage .countable:not(.counted), #stage .cards, #stage .balloon, #stage .tray .item:not(.dim), #stage .srcgrp .item:not(.dim), #stage .side');
+          if(a){ this.assisted = true; Ghost.run(this, [a]); }
         }
       }
     }, T(3000));
@@ -1397,6 +1438,7 @@ const App = {
     delete st.dataset.activity; delete st.dataset.answer;
     $('#cele').classList.remove('on'); $('#cele').innerHTML = '';
     $('#playBg').removeAttribute('src');           // 隐藏场景不保留位图（F2/P1-07）
+    $('#mapBg').src = 'assets/bg/bg_sky.png';
     if(!$('#mapGrid').children.length) this.buildMap();
     this.currentWorld = null;
     UI.syncStars();
@@ -1414,15 +1456,17 @@ const App = {
     this.currentWorld = world;
     $('#playBg').src = `assets/bg/bg_${world.id}.png`;
     $('#mapGrid').innerHTML = '';                  // 卸载地图位图（F2/P1-07）
+    $('#mapBg').removeAttribute('src');
     $('#bootChars').innerHTML = '';
     $('#stage').innerHTML = '';
     const dots = $('#dots'); dots.innerHTML = '';
     for(let i = 0; i < 5; i++) el('i','', dots);
     this.show('scenePlay');
-    Speech.say(`欢迎来到${world.name}！`);
     const abortP = new Promise(r => { this._abortResolve = r; });
     const plan = Skills.plan();
-    await wait(900);
+    // 欢迎语完整播完再进第一个活动（活动切换的 stopAll 不会掐断它）
+    await Promise.race([Speech.say(`欢迎来到${world.name}！`), abortP]);
+    if(sid !== this.sessionId) return;
     for(let i = 0; i < plan.length; i++){
       if(sid !== this.sessionId) return;
       const res = await Promise.race([this.runOne(plan[i], world), abortP]);
@@ -1445,7 +1489,7 @@ const App = {
   },
 
   async runOne(type, world){
-    Speech.newContext();                            // 活动切换: 过期语音回调/重试退休（§9.6）
+    Speech.stopAll();                               // 活动切换: 全量清场+gen++, 过期回调/重试退休（§9.6）
     const stage = $('#stage');
     stage.innerHTML = '';
     delete stage.dataset.answer;
@@ -1461,6 +1505,7 @@ const App = {
   },
 
   async bigCele(world, sid){
+    $('#stage').innerHTML = '';                     // 清空活动残留(彩带/物品), 保持同时动画≤40（P1-07）
     const cele = $('#cele');
     cele.innerHTML = '';
     const card = el('div','cele-card', cele);
@@ -1569,7 +1614,7 @@ const Parent = {
 
 /* ============ 13. 测试钩子 ============ */
 window.__KM = {
-  version:KM_VERSION, App, Store, Speech, Sfx, Skills, FAST,
+  version:KM_VERSION, App, Store, Speech, Sfx, Skills, FAST, rng,
   speechLog:() => Speech.log
 };
 
