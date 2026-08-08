@@ -55,7 +55,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 #hudStars span{font-size:4.6vmin;font-weight:900;color:#f59f00}
 #btnHome{top:max(2vmin,env(safe-area-inset-top));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:88px;min-height:88px;border-radius:50%;background:rgba(255,255,255,.6);font-size:5vmin;box-shadow:0 .5vmin 1.5vmin rgba(90,60,0,.15);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
 #btnHome.armed{background:#ffe066;transform:scale(1.15)}
-#btnReplay{bottom:max(2.4vmin,env(safe-area-inset-bottom));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:64px;min-height:64px;border-radius:50%;background:rgba(255,255,255,.9);font-size:5.6vmin;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.25);display:flex;align-items:center;justify-content:center;z-index:30;position:absolute}
+#btnReplay{bottom:max(2.4vmin,env(safe-area-inset-bottom));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:88px;min-height:88px;border-radius:50%;background:rgba(255,255,255,.9);font-size:5.6vmin;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.25);display:flex;align-items:center;justify-content:center;z-index:30;position:absolute}
 #btnReplay:active,#btnHome:active{transform:scale(.9)}
 #dots{top:max(2.6vmin,env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
 #dots i{display:block;width:2.6vmin;height:2.6vmin;min-width:14px;min-height:14px;border-radius:50%;background:rgba(255,255,255,.6);border:.4vmin solid rgba(255,255,255,.9)}
@@ -113,7 +113,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .bgveil{position:absolute;inset:0;background:rgba(255,255,255,.16);z-index:0;pointer-events:none}
 .flashpad{position:absolute;left:8%;right:36%;top:16%;bottom:30%;background:rgba(255,255,255,.55);border-radius:4vmin;z-index:4}
 .flashpad .item{cursor:default}
-.flashcover{position:absolute;inset:-2%;background:linear-gradient(#e7f5ff,#d0ebff);border-radius:4vmin;z-index:8;display:flex;align-items:center;justify-content:center;font-size:14vmin;animation:popin .3s}
+.flashcover{position:absolute;inset:-2%;background:linear-gradient(#dceefe,#b9dcf7 70%,#a5d2f3);border-radius:4vmin;z-index:8;display:flex;align-items:center;justify-content:center;font-size:30vmin;animation:popin .3s;box-shadow:inset 0 -1.4vmin 0 rgba(120,160,200,.35),inset 0 1vmin 2vmin rgba(255,255,255,.9);text-shadow:0 1.4vmin 2.6vmin rgba(90,130,180,.4)}
 @media (orientation:portrait){.flashpad{left:6%;right:6%;top:30%;bottom:34%}}
 .flyer{position:fixed;z-index:60;pointer-events:none;transition:transform .5s cubic-bezier(.35,.9,.55,1),opacity .5s}
 
@@ -133,8 +133,8 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .slot img{width:88%;height:88%;object-fit:contain;animation:popin .25s}
 .srcgrp{position:absolute;display:flex;flex-direction:column;align-items:center;z-index:4}
 .srcgrp .schar{width:19vmin;height:auto}
-.srcgrp .sitems{display:flex;flex-wrap:wrap;gap:1vmin;justify-content:center;max-width:24vmin;margin-top:.6vmin}
-.srcgrp .item{position:relative;transform:none;width:10.5vmin;height:10.5vmin;min-width:62px;min-height:62px}
+.srcgrp .sitems{display:flex;flex-wrap:wrap;gap:1vmin;justify-content:center;max-width:30vmin;margin-top:.6vmin}
+.srcgrp .item{position:relative;transform:none;width:11.5vmin;height:11.5vmin;min-width:88px;min-height:88px}
 
 /* celebration overlay */
 #cele{position:absolute;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(70,40,110,.45)}
@@ -257,6 +257,7 @@ const CHARS = {
   hulu1:'红娃', hulu2:'橙娃', hulu3:'黄娃', hulu4:'绿娃', hulu5:'青娃', hulu6:'蓝娃', hulu7:'紫娃',
   yeye:'爷爷', shejing:'蛇精', xiezijing:'蝎子精',
   ironman:'钢铁侠', cap:'美国队长', thor:'雷神', hulk:'绿巨人', blackwidow:'黑寡妇', hawkeye:'鹰眼',
+  spiderman:'蜘蛛侠', miles:'迈尔斯', gwen:'格温',
   ryder:'莱德', chase:'阿奇', marshall:'毛毛', skye:'天天', rocky:'灰灰', zuma:'路马', rubble:'小砾',
   bluey:'布鲁伊', bingo:'宾果', bandit:'爸爸班迪', chilli:'妈妈琪莉',
   peppa:'佩奇', george:'乔治', papa:'猪爸爸', mama:'猪妈妈'
@@ -268,7 +269,7 @@ const ITEMS = {
 const WORLDS = [
   {id:'xiyou',    name:'花果山', chars:['wukong','bajie','wujing','tangseng','bailongma'], items:['peach','baozi'], tint:'#ffb3c1'},
   {id:'hulu',     name:'葫芦山', chars:['hulu1','hulu2','hulu3','hulu4','hulu5','hulu6','hulu7','yeye','shejing','xiezijing'], items:['hulu'], tint:'#b2f2bb'},
-  {id:'avengers', name:'英雄城', chars:['ironman','cap','thor','hulk','blackwidow','hawkeye'], items:['star'], tint:'#a5d8ff'},
+  {id:'avengers', name:'英雄城', chars:['ironman','cap','thor','hulk','blackwidow','hawkeye','spiderman','miles','gwen'], items:['star'], tint:'#a5d8ff'},
   {id:'paw',      name:'冒险湾', chars:['ryder','chase','marshall','skye','rocky','zuma','rubble'], items:['bone','ball'], tint:'#ffd8a8'},
   {id:'bluey',    name:'蓝狗家', chars:['bluey','bingo','bandit','chilli'], items:['ball','apple'], tint:'#99e9f2'},
   {id:'peppa',    name:'佩奇小镇', chars:['peppa','george','papa','mama'], items:['cookie','apple'], tint:'#fcc2d7'}
@@ -295,9 +296,16 @@ const Store = {
       for(const k in base.skills){ base.skills[k] = Object.assign(base.skills[k], d.skills[k] || {}); }
       base.stars = (typeof d.stars === 'number' && d.stars >= 0) ? d.stars : 0;
       base.diff = ['auto','1','2','3'].includes(d.diff) ? d.diff : 'auto';
-      base.voiceURI = d.voiceURI || null;
-      base.rot = d.rot || {}; base.irot = d.irot || {};
-      base.seen = d.seen || {}; base.calm = !!d.calm;
+      base.voiceURI = (typeof d.voiceURI === 'string') ? d.voiceURI : null;
+      // 结构校验（P2-02）: rot/irot 仅接受数值表, seen 仅接受布尔真值表
+      const numMap = o => { const r = {};
+        if(o && typeof o === 'object' && !Array.isArray(o)) for(const k in o){ if(typeof o[k] === 'number' && isFinite(o[k])) r[k] = o[k]; }
+        return r; };
+      base.rot = numMap(d.rot); base.irot = numMap(d.irot);
+      const seen = {};
+      if(d.seen && typeof d.seen === 'object' && !Array.isArray(d.seen)) for(const k in d.seen){ if(d.seen[k] === true) seen[k] = true; }
+      base.seen = seen;
+      base.calm = d.calm === true;
       base.keepAlive = d.keepAlive !== false;
     }
     this.data = base;
@@ -340,7 +348,11 @@ const Speech = {
     document.addEventListener('visibilitychange', () => {
       if(!document.hidden){ try{ speechSynthesis.resume(); }catch(e){} }
     });
-    window.addEventListener('pageshow', () => { try{ speechSynthesis.resume(); }catch(e){} });
+    window.addEventListener('pageshow', () => {
+      // bfcache 恢复: 清计数队列(§9.6), resume 引擎
+      this._countQ.length = 0; this._latestCount = null;
+      try{ speechSynthesis.resume(); }catch(e){}
+    });
   },
 
   pickVoice(){
@@ -466,6 +478,24 @@ const Speech = {
     if(this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount) return true;
     return false;
   },
+  /* 计数队列排空（P1-01）: 末数播完再进入提问, 不用固定延时猜测 */
+  drain(maxMs){
+    const deadline = Date.now() + (maxMs || 4000);
+    return new Promise(res => {
+      const chk = () => {
+        this._countQ = this._countQ.filter(q => !q.done);
+        const busyCount = this._countQ.length > 0 || (this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount);
+        if(!busyCount || Date.now() > deadline) res();
+        else setTimeout(chk, 120);
+      };
+      chk();
+    });
+  },
+  /* 活动切换语境（I10/§9.6）: 过期回调/重试/兜底全部退休, 不打断当前语音 */
+  newContext(){
+    this._gen++;
+    this._latestCount = null;
+  },
   _enqCount(word){
     let u;
     try{ u = this._mkUtter(word, {rate:1.0, pitch:1.15}); }catch(e){ return; }
@@ -521,9 +551,13 @@ const Sfx = {
         this.ctx = new AC();
         this.master = this.ctx.createGain(); this.master.gain.value = .5;
         this.master.connect(this.ctx.destination);
-        this.ctx.onstatechange = () => {};        // 中断后由下一次手势内 ensure() resume
       }
-      if(this.ctx.state === 'suspended') this.ctx.resume();
+      // iOS 'interrupted'（电话/Siri）与 'suspended' 都在手势内恢复（I10）
+      if(this.ctx.state !== 'running'){ const p = this.ctx.resume(); if(p && p.catch) p.catch(() => {}); }
+      // pagehide 暂停过的无声保活 loop 在下一次手势内恢复
+      if(this.silentEl && this.silentEl.paused && !document.hidden && Store.data.keepAlive){
+        const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {});
+      }
     }catch(e){}
   },
   duck(on){ try{ if(this.master) this.master.gain.value = on ? .16 : .5; }catch(e){} },
@@ -636,7 +670,8 @@ const Skills = {
         return {a: big, b: small};
       }
       case 'compose':{
-        const total = L === 1 ? 3 + ri(2) : L === 2 ? 5 : 6 + ri(5);
+        // L3 上限 8: 保证 88px 源物品在竖屏也放得下（P1-04）
+        const total = L === 1 ? 3 + ri(2) : L === 2 ? 5 : 6 + ri(3);
         const a = 1 + ri(total - 1);
         return {a, b: total - a};
       }
@@ -840,7 +875,7 @@ const Activities = {
         const bd = el('span','cbadge', b); bd.textContent = counted;
         Speech.countSay(NUM_CN[counted]);
         ctx.touch();
-        if(counted === n) ctx.after(700, res);
+        if(counted === n) ctx.after(350, () => Speech.drain(4000).then(() => { if(ctx.alive()) res(); }));
       }));
     });
     if(!ctx.alive()) return {aborted:true};
@@ -868,6 +903,7 @@ const Activities = {
       imgTag(itemImg(ctx.item), '', w);
       items.push(w);
     });
+    ctx.maybeDemo([pad]);                          // 首遇: 幽灵手指向观察区（P0-03）
     const intro = `睁大眼睛看好哦！它们马上要藏起来啦！`;
     App.setInstruction(intro);
     await sayAs(host, intro);
@@ -931,7 +967,8 @@ const Activities = {
           }
         });
       });
-      ctx.maybeDemo([tc, balloons[0]]);
+      // 示范指向正确气球（示范回合本身计 hinted, 教对而不是教错; P0-03）
+      ctx.maybeDemo([tc, balloons.find(x => +x.dataset.value === target) || balloons[0]]);
     });
     if(!ctx.alive()) return {aborted:true};
     return {skill:'numeral', firstTry};
@@ -959,7 +996,7 @@ const Activities = {
       imgTag(itemImg(ctx.item), '', b);
       items.push(b);
     }
-    let btnDone = null, fed = 0, big = null, attempts = 0, resolved = false;
+    let btnDone = null, fed = 0, big = null, attempts = 0, resolved = false, uiBusy = false;
     const setBig = () => { if(big){ big.remove(); big = null; } if(fed > 0){ big = el('div','bigcount', stage); big.textContent = fed; } };
     const intro = `我是${CHARS[ctx.host]}！我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了，就按绿色的勾勾告诉我哦！`;
     App.setInstruction(intro); sayAs(host, intro);
@@ -983,6 +1020,10 @@ const Activities = {
         btnDone = el('button','', stage); btnDone.id = 'btnDone';
         btnDone.setAttribute('aria-label','喂好了');
         btnDone.addEventListener('pointerdown', onSubmit);
+        if(ctx.assisted && !ctx._doneIntro){        // 首遇示范也介绍绿勾（P0-03）
+          ctx._doneIntro = true;
+          ctx.after(500, () => Ghost.run(ctx, [btnDone]));
+        }
       }
     };
     const resetRound = () => {
@@ -993,39 +1034,47 @@ const Activities = {
     let finish;
     const done = new Promise(r => { finish = r; });
     async function onSubmit(e){
-      if((e && e.isPrimary === false) || !ctx.alive() || resolved) return;
-      ctx.touch(); Sfx.ensure(); UI.bump(btnDone);
-      attempts++;
-      if(fed === n){
-        resolved = true;
-        Sfx.yay(); UI.confetti(stage, 14);
-        await sayAs(host, `啊呜～正好${qtyCN(n)}${it.cl}${it.n}，吃饱啦！谢谢你！`);
-        finish({firstTry: attempts === 1});
-        return;
-      }
-      // 中性脚手架: 数"我吃到的" vs 目标
-      Sfx.soft();
-      await sayAs(host, `我们数一数我吃了几${it.cl}……`);
-      if(!ctx.alive()) return;
-      for(let i = 0; i < fed && i <= 10; i++){
+      if((e && e.isPrimary === false) || !ctx.alive() || resolved || uiBusy) return;
+      uiBusy = true;                               // 错误反馈期输入锁（P1-03）
+      try{
+        ctx.touch(); Sfx.ensure(); UI.bump(btnDone);
+        await Speech.drain(2500);                  // 末尾计数词播完再评判
         if(!ctx.alive()) return;
-        Sfx.pop();
-        await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
-        await wait(120);
-      }
-      const diffLine = fed === 0 ? `我还什么都没吃到呀！` : `是${qtyCN(fed)}${it.cl}。`;
-      await sayAs(host, `${diffLine}可是我想吃${qtyCN(n)}${it.cl}哦！再试一次吧！`);
-      if(!ctx.alive()) return;
-      resetRound();
-      if(attempts >= 2){
-        // 二级脚手架: 幽灵手示范喂 n 个（此后完成计 hinted）
-        await Ghost.run(ctx, items.slice(0, n));
+        attempts++;
+        if(fed === n){
+          resolved = true;
+          Sfx.yay(); UI.confetti(stage, 14);
+          await sayAs(host, `啊呜～正好${qtyCN(n)}${it.cl}${it.n}，吃饱啦！谢谢你！`);
+          finish({firstTry: attempts === 1});
+          return;
+        }
+        // 中性脚手架: 数"我吃到的" vs 目标（点点逐个高亮, 语音+视觉双通道）
+        Sfx.soft();
+        await sayAs(host, `我们数一数我吃了几${it.cl}……`);
         if(!ctx.alive()) return;
-        Speech.politeSay(`喂${qtyCN(n)}${it.cl}，然后按绿色的勾勾！`);
-      }
+        for(let i = 0; i < fed && i <= 10; i++){
+          if(!ctx.alive()) return;
+          Sfx.pop();
+          const d = dots.children[i];
+          if(d){ d.classList.remove('hl'); void d.offsetWidth; d.classList.add('hl'); }
+          await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
+          await wait(120);
+        }
+        const diffLine = fed === 0 ? `我还什么都没吃到呀！` : `是${qtyCN(fed)}${it.cl}。`;
+        await sayAs(host, `${diffLine}可是我想吃${qtyCN(n)}${it.cl}哦！再试一次吧！`);
+        if(!ctx.alive()) return;
+        resetRound();
+        if(attempts >= 2){
+          // 二级脚手架: 幽灵手示范喂 n 个（此后完成计 hinted）
+          ctx.assisted = true;
+          await Ghost.run(ctx, items.slice(0, n));
+          if(!ctx.alive()) return;
+          Speech.politeSay(`喂${qtyCN(n)}${it.cl}，然后按绿色的勾勾！`);
+        }
+      } finally { uiBusy = false; }
     }
     items.forEach(b => b.addEventListener('pointerdown', e => {
-      if(e.isPrimary === false || !ctx.alive() || resolved || b.classList.contains('dim')) return;
+      if(e.isPrimary === false || !ctx.alive() || resolved || uiBusy || b.classList.contains('dim')) return;
       if(Speech.countBusy()){ UI.bump(b); return; }
       ctx.touch();
       if(fed >= m){ return; }
@@ -1041,6 +1090,7 @@ const Activities = {
   async compare(stage, ctx){
     const it = ITEMS[ctx.item];
     let {a, b} = ctx.params;
+    if(rng() < .5){ const t = a; a = b; b = t; }   // 位置平衡: 多的一侧随机在左/右（P0-01）
     const [cA, cB] = ctx.pair;
     const duel = el('div','duel', stage);
     const sides = [];
@@ -1125,7 +1175,7 @@ const Activities = {
         Sfx.pop(); Speech.countSay(NUM_CN[placed]);
         imgTag(itemImg(ctx.item), '', slots[placed - 1]);
         placedImgs.push(slots[placed - 1]);
-        if(placed === a + b) ctx.after(700, res);
+        if(placed === a + b) ctx.after(350, () => Speech.drain(4000).then(() => { if(ctx.alive()) res(); }));
       }));
     });
     if(!ctx.alive()) return {aborted:true};
@@ -1170,6 +1220,7 @@ const Activities = {
     if(!ctx.alive()) return {aborted:true};
     const cq = `现在一共有几${it.cl}${it.n}？点一点，数一数吧！`;
     App.setInstruction(cq); sayAs(host, cq); ctx.nudge(cq, items[0]);
+    ctx.maybeDemo([items[0]]);                     // 首遇: 示范点数手势（P0-03）
     let counted = 0;
     await new Promise(res => {
       items.forEach(w => w.addEventListener('pointerdown', e => {
@@ -1181,7 +1232,7 @@ const Activities = {
         const bd = el('span','cbadge', w); bd.textContent = counted;
         Speech.countSay(NUM_CN[counted]);
         ctx.touch();
-        if(counted === a + b) ctx.after(700, res);
+        if(counted === a + b) ctx.after(350, () => Speech.drain(4000).then(() => { if(ctx.alive()) res(); }));
       }));
     });
     if(!ctx.alive()) return {aborted:true};
@@ -1205,6 +1256,7 @@ class ActCtx {
     this.timers = new Set();
     this.lastTouch = Date.now();
     this.nudges = 0;
+    this.assisted = false;      // 任何幽灵手介入(首遇示范/空闲指点) → 本题只能计 hinted（P0-02）
     // 角色/物品轮换: 让 36 个角色都持续登场
     const rot = Store.data.rot, irot = Store.data.irot;
     rot[world.id] = rot[world.id] || 0; irot[world.id] = irot[world.id] || 0;
@@ -1225,6 +1277,7 @@ class ActCtx {
     if(QP.get('demo') === '0') return;
     if(Store.data.seen[this.type]) return;
     Store.data.seen[this.type] = true; Store.save();
+    this.assisted = true;       // 首遇示范回合不计独立掌握
     const self = this;
     setTimeout(() => { if(self.alive()) Ghost.run(self, anchors); }, T(1400));
   }
@@ -1239,6 +1292,7 @@ class ActCtx {
         this.nudges++; this.lastTouch = Date.now();
         Speech.politeSay(this._nudgeText);
         if(this.nudges >= 2 && this._nudgeAnchor && this._nudgeAnchor.isConnected){
+          this.assisted = true;
           Ghost.run(this, [this._nudgeAnchor]);
         }
       }
@@ -1310,6 +1364,7 @@ const App = {
 
   buildMap(){
     const g = $('#mapGrid');
+    g.innerHTML = '';
     WORLDS.forEach(w => {
       const b = el('button','island', g);
       b.dataset.world = w.id;
@@ -1341,6 +1396,8 @@ const App = {
     st.innerHTML = '';                             // 卸载 DOM + 解码位图
     delete st.dataset.activity; delete st.dataset.answer;
     $('#cele').classList.remove('on'); $('#cele').innerHTML = '';
+    $('#playBg').removeAttribute('src');           // 隐藏场景不保留位图（F2/P1-07）
+    if(!$('#mapGrid').children.length) this.buildMap();
     this.currentWorld = null;
     UI.syncStars();
     this.show('sceneMap');
@@ -1356,6 +1413,8 @@ const App = {
     const sid = ++this.sessionId;
     this.currentWorld = world;
     $('#playBg').src = `assets/bg/bg_${world.id}.png`;
+    $('#mapGrid').innerHTML = '';                  // 卸载地图位图（F2/P1-07）
+    $('#bootChars').innerHTML = '';
     $('#stage').innerHTML = '';
     const dots = $('#dots'); dots.innerHTML = '';
     for(let i = 0; i < 5; i++) el('i','', dots);
@@ -1368,7 +1427,8 @@ const App = {
       if(sid !== this.sessionId) return;
       const res = await Promise.race([this.runOne(plan[i], world), abortP]);
       if(!res || res.aborted || sid !== this.sessionId) return;
-      Skills.record(res.skill, res.firstTry);
+      // independent = 首试正确且零脚手架介入（DESIGN §9.1, P0-02）
+      Skills.record(res.skill, res.firstTry && !res.assisted);
       Store.data.stars++; Store.save();
       dots.children[i].classList.add('done');
       UI.starFly();
@@ -1385,6 +1445,7 @@ const App = {
   },
 
   async runOne(type, world){
+    Speech.newContext();                            // 活动切换: 过期语音回调/重试退休（§9.6）
     const stage = $('#stage');
     stage.innerHTML = '';
     delete stage.dataset.answer;
@@ -1394,6 +1455,7 @@ const App = {
     let out;
     try{ out = await Activities[type](stage, ctx); }
     catch(e){ console.error('activity error', e); out = {aborted:true}; }
+    if(out && !out.aborted) out.assisted = ctx.assisted;
     ctx.dispose();
     return out;
   },
@@ -1409,7 +1471,7 @@ const App = {
     const dancers = world.chars.length > 6 ? shuffle(world.chars).slice(0, 6) : world.chars;
     dancers.forEach((c, i) => { imgTag(charImg(c), '', row).style.animationDelay = (i * .12) + 's'; });
     cele.classList.add('on');
-    UI.confetti(cele, 36);
+    UI.confetti(cele, 28);                          // 28粒+6舞者+星星+标题 ≤40 动画元素预算
     Sfx.yay();
     Speech.say(`哇！太棒啦！你帮${world.name}的朋友们解决了所有问题，大家都为你欢呼！`);
     await new Promise(res => {

@@ -46,6 +46,9 @@ CHARS = [
     ("hulk",      "Hulk as an adorable chibi cartoon hero — big friendly green muscly body, messy dark-green hair, purple shorts, huge happy grin, flexing both arms in a playful pose"),
     ("blackwidow","Black Widow as an adorable chibi cartoon heroine — shoulder-length wavy red hair, black tactical suit with a small golden hourglass belt buckle, hands on hips, confident friendly smile"),
     ("hawkeye",   "Hawkeye as an adorable chibi cartoon hero — short brown hair, purple-and-black archer outfit, holding a small bow, quiver of round-tipped arrows on his back, friendly wink"),
+    ("spiderman", "Spider-Man as an adorable chibi cartoon hero — bright red and blue suit with thin black web pattern, big friendly white teardrop eyes on the red mask, one hand waving hello"),
+    ("miles",     "Miles Morales Spider-hero as an adorable chibi cartoon hero — sleek black suit with bold red spider emblem and red web accents, big friendly white eyes, energetic jumping pose"),
+    ("gwen",      "Ghost-Spider (Spider-Gwen) as an adorable chibi cartoon heroine — white hooded suit with black torso, pink and cyan accents inside the hood, hood up, big white teardrop eyes, ballet-like pose"),
     # 汪汪队
     ("ryder",    "Ryder the boy leader from PAW Patrol as an adorable cartoon boy — spiky brown hair, red-white-and-blue rescue vest, dark blue trousers, giving a cheerful thumbs up"),
     ("chase",    "Chase from PAW Patrol as an adorable cartoon German-shepherd puppy — brown and tan fur, blue police uniform and blue police cap, blue pup-pack on his back, sitting proudly with a big smile"),

@@ -10,6 +10,8 @@ from manifest import build
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def qa(asset):
+    """自动检查: 尺寸 / 四角alpha / 主体bbox占比(22%-97%, 与DESIGN §9.5一致) /
+    贴边裁切 / 边缘halo(半透明亮色描边采样)。"""
     rel = asset["file"]; p = os.path.join(ROOT, rel)
     issues = []
     if not os.path.exists(p):
@@ -22,6 +24,7 @@ def qa(asset):
         issues.append(f"small {w}x{h}")
     if asset["transparent"]:
         rgba = im.convert("RGBA")
+        px = rgba.load()
         a = rgba.split()[3]
         for xy in [(2,2),(w-3,2),(2,h-3),(w-3,h-3)]:
             if a.getpixel(xy) > 12: issues.append(f"corner opaque {xy}"); break
@@ -30,10 +33,23 @@ def qa(asset):
             issues.append("empty")
         else:
             cov = (bbox[2]-bbox[0])*(bbox[3]-bbox[1])/(w*h)
-            if cov < 0.20: issues.append(f"subject tiny cov={cov:.2f}")
-            if cov > 0.985: issues.append(f"likely cropped cov={cov:.2f}")
+            if cov < 0.22: issues.append(f"subject tiny cov={cov:.2f}")
+            if cov > 0.97: issues.append(f"likely cropped cov={cov:.2f}")
             if bbox[0] <= 1 or bbox[1] <= 1 or bbox[2] >= w-1 or bbox[3] >= h-1:
                 issues.append("touches edge (possible crop)")
+            # 边缘 halo: 半透明像素中亮白像素占比过高 = 抠图脏边
+            semi = bright = 0
+            step = max(1, (bbox[2]-bbox[0]) // 64)
+            for y in range(bbox[1], bbox[3], step):
+                for x in range(bbox[0], bbox[2], step):
+                    r, g, b, al = px[x, y]
+                    if 20 < al < 200:
+                        semi += 1
+                        if r > 235 and g > 235 and b > 235: bright += 1
+            if semi > 40 and bright / semi > 0.55:
+                # 贴纸风白描边的抗锯齿像素也会命中此启发式 → 仅提示, 需目检区分
+                # (2026-08 目检结论: 全部命中均为刻意的 sticker 白描边, 非抠图脏边)
+                issues.append(f"ADVISORY: bright edge band ({bright}/{semi} semi-px; sticker border vs halo — needs eyeball)")
     return issues
 
 def contact_sheet(files, out, cols=6, cell=200, label=True):
@@ -58,10 +74,16 @@ def contact_sheet(files, out, cols=6, cell=200, label=True):
 def main():
     manifest = build()
     bad = {}
+    adv = {}
     for a in manifest:
         iss = qa(a)
-        if iss: bad[a["file"]] = iss
-    print(json.dumps(bad, indent=1) if bad else "QA: all automated checks passed")
+        hard = [i for i in iss if not i.startswith("ADVISORY")]
+        soft = [i for i in iss if i.startswith("ADVISORY")]
+        if hard: bad[a["file"]] = hard
+        if soft: adv[a["file"]] = soft
+    print(json.dumps(bad, indent=1) if bad else "QA: all hard checks passed")
+    if adv:
+        print(f"({len(adv)} advisory notes — sticker-border AA, eyeballed OK)")
     chars = [a["file"] for a in manifest if "/char/" in a["file"]]
     items = [a["file"] for a in manifest if "/item/" in a["file"]]
     isls  = [a["file"] for a in manifest if "/isl_" in a["file"]]

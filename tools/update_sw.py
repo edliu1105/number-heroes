@@ -57,7 +57,10 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const r = await fetch(req);
-        if (r && r.ok) { const c = await caches.open(CACHE); c.put(req, r.clone()); }
+        if (r && r.ok) {
+          const copy = r.clone();
+          e.waitUntil(caches.open(CACHE).then(c => c.put(req, copy)));  // 回填在 worker 生命周期内完成
+        }
         return r;
       } catch (err) {
         const c = await caches.open(CACHE);
@@ -72,7 +75,10 @@ self.addEventListener('fetch', e => {
     if (hit) return hit;
     try {
       const r = await fetch(req);
-      if (r && r.ok) { const c = await caches.open(CACHE); c.put(req, r.clone()); }
+      if (r && r.ok) {
+        const copy = r.clone();
+        e.waitUntil(caches.open(CACHE).then(c => c.put(req, copy)));
+      }
       return r;
     } catch (err) { return Response.error(); }
   })());

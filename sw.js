@@ -19,6 +19,7 @@ const ASSETS = [
   'assets/char/chase.png',
   'assets/char/chilli.png',
   'assets/char/george.png',
+  'assets/char/gwen.png',
   'assets/char/hawkeye.png',
   'assets/char/hulk.png',
   'assets/char/hulu1.png',
@@ -31,6 +32,7 @@ const ASSETS = [
   'assets/char/ironman.png',
   'assets/char/mama.png',
   'assets/char/marshall.png',
+  'assets/char/miles.png',
   'assets/char/papa.png',
   'assets/char/peppa.png',
   'assets/char/rocky.png',
@@ -38,6 +40,7 @@ const ASSETS = [
   'assets/char/ryder.png',
   'assets/char/shejing.png',
   'assets/char/skye.png',
+  'assets/char/spiderman.png',
   'assets/char/tangseng.png',
   'assets/char/thor.png',
   'assets/char/wujing.png',
@@ -98,7 +101,10 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const r = await fetch(req);
-        if (r && r.ok) { const c = await caches.open(CACHE); c.put(req, r.clone()); }
+        if (r && r.ok) {
+          const copy = r.clone();
+          e.waitUntil(caches.open(CACHE).then(c => c.put(req, copy)));  // 回填在 worker 生命周期内完成
+        }
         return r;
       } catch (err) {
         const c = await caches.open(CACHE);
@@ -113,7 +119,10 @@ self.addEventListener('fetch', e => {
     if (hit) return hit;
     try {
       const r = await fetch(req);
-      if (r && r.ok) { const c = await caches.open(CACHE); c.put(req, r.clone()); }
+      if (r && r.ok) {
+        const copy = r.clone();
+        e.waitUntil(caches.open(CACHE).then(c => c.put(req, copy)));
+      }
       return r;
     } catch (err) { return Response.error(); }
   })());

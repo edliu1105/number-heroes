@@ -112,9 +112,28 @@ def click_answer(page, answer, wrong_first=False):
         page.wait_for_timeout(650)
     raise Fail("answer card click never resolved the activity")
 
-def solve_current(page, wrong_first=False, slow_count=False):
+SIZE_VIOLATIONS = []
+COMPARE_SIDES = []
+def audit_sizes(page, label):
+    """核心触摸目标 ≥88px（浮点容差 87.5; 槽位/徽章等非目标元素不在列）"""
+    bad = page.evaluate("""() => {
+      const bad = [];
+      for(const sel of ['.countable','.ncard','.balloon','#btnHome','#btnReplay','#btnDone','.tray .item','.srcgrp .item']){
+        document.querySelectorAll(sel).forEach(e => {
+          const r = e.getBoundingClientRect();
+          if(r.width > 0 && (r.width < 87.5 || r.height < 87.5))
+            bad.push(sel + ':' + Math.round(r.width) + 'x' + Math.round(r.height));
+        });
+      }
+      return bad; }""")
+    for b in bad:
+        SIZE_VIOLATIONS.append(f"{label} {b}")
+
+def solve_current(page, wrong_first=False, slow_count=False, audit=None):
     st = state(page)
     act, ans = st["act"], st["answer"]
+    if audit:
+        audit_sizes(page, f"{audit}/{act}")
     if act in ("count", "add"):
         deadline = time.time() + 25
         while time.time() < deadline:
@@ -136,6 +155,10 @@ def solve_current(page, wrong_first=False, slow_count=False):
             page.wait_for_timeout(170)
         page.locator("#btnDone").click(timeout=5000)
     elif act == "compare":
+        idx = page.evaluate(f"""() => {{
+          const sides = [...document.querySelectorAll('.side')];
+          return sides.findIndex(s => s.dataset.char === '{ans}'); }}""")
+        COMPARE_SIDES.append('L' if idx == 0 else 'R')
         page.locator(f".side[data-char='{ans}']").click(timeout=5000)
     elif act == "compose":
         deadline = time.time() + 25
@@ -162,7 +185,7 @@ def wait_new_activity(page, prev_aid, timeout=30):
         page.wait_for_timeout(120)
     raise Fail(f"no new activity after aid={prev_aid}")
 
-def play_island(page, idx, types_seen, shots_prefix=None, wrong_on_first=False, slow_first_count=False):
+def play_island(page, idx, types_seen, shots_prefix=None, wrong_on_first=False, slow_first_count=False, audit=None):
     page.locator(".island").nth(idx).click(timeout=5000)
     aid = wait_new_activity(page, -999)
     n_done = 0
@@ -181,7 +204,8 @@ def play_island(page, idx, types_seen, shots_prefix=None, wrong_on_first=False, 
             page.wait_for_timeout(400)
             page.screenshot(path=os.path.join(SHOTS, f"{shots_prefix}_{act}.png"))
         solved = solve_current(page, wrong_first=(wrong_on_first and first),
-                               slow_count=(slow_first_count and first and act == "count"))
+                               slow_count=(slow_first_count and first and act == "count"),
+                               audit=audit)
         types_seen.add(solved)
         n_done += 1
         first = False
@@ -244,24 +268,21 @@ def main():
                 page.screenshot(path=os.path.join(SHOTS, "t1_map.png"))
                 types_seen = set()
                 # 岛1: 新手状态; 第一个 count 慢点(700ms间隔)供听觉一一对应断言; 首题故意答错一次走脚手架
-                play_island(page, 0, types_seen, shots_prefix="t1a", wrong_on_first=True, slow_first_count=True)
-                # 解锁全部活动类型后再走查
+                play_island(page, 0, types_seen, shots_prefix="t1a", wrong_on_first=True, slow_first_count=True, audit="t1")
+                # 解锁全部活动类型, 六岛全部走查（P1-05）
                 page.evaluate("""() => { const d = window.__KM.Store.data;
                   for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
                   window.__KM.Store.save(); }""")
-                for isl in (1, 2, 3):
-                    play_island(page, isl, types_seen, shots_prefix=f"t1_{isl}")
-                    if {"count","numeral","produce","flash","compare","compose","add"} <= types_seen:
-                        break
+                for isl in (1, 2, 3, 4, 5):
+                    play_island(page, isl, types_seen, shots_prefix=f"t1_{isl}", audit="t1")
                 missing = {"count","numeral","produce","flash","compare","compose","add"} - types_seen
                 if missing:
-                    for isl in (4, 5):
-                        play_island(page, isl, types_seen)
-                        missing = {"count","numeral","produce","flash","compare","compose","add"} - types_seen
-                        if not missing:
-                            break
-                if missing:
-                    raise Fail(f"activity types not covered: {missing}")
+                    raise Fail(f"activity types not covered after 6 islands: {missing}")
+                if SIZE_VIOLATIONS:
+                    raise Fail("touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:6]))
+                # 比较活动位置平衡（P0-01）: 走查过程中"多的一侧"应两侧都出现过（seed 固定, 确定性）
+                if len(COMPARE_SIDES) >= 2 and len(set(COMPARE_SIDES)) < 2:
+                    raise Fail(f"compare winner always on same side: {COMPARE_SIDES}")
                 # 语音时间线
                 log = get_speech(page)
                 nspeaks = assert_speech_rules(log, "T1")
@@ -320,14 +341,15 @@ def main():
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 page.locator(".island").nth(1).click()
                 wait_new_activity(page, -999)
-                # 疯狂连点 3 秒: 物品/答案牌/气球/随机位置
+                # 疯狂连点 3 秒: 真实鼠标点击（实时包围盒坐标, 非合成事件; P1-05）
                 end = time.time() + 3
                 while time.time() < end:
                     for sel in (".countable", ".ncard", ".balloon", ".tray .item", ".srcgrp .item", "#btnDone"):
                         loc = page.locator(sel)
-                        c = loc.count()
-                        if c:
-                            try: loc.nth(0).dispatch_event("pointerdown")
+                        if loc.count():
+                            try:
+                                bb = loc.nth(0).bounding_box()
+                                if bb: page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
                             except Exception: pass
                     page.mouse.click(590, 400)
                 # 连点后应用仍可推进: 完成当前活动
@@ -371,12 +393,11 @@ def main():
                   return im.length>0 && im.every(i=>i.complete && i.naturalWidth>0); }""")
                 if not imgs_ok:
                     raise Fail("map images not loaded offline")
-                page.locator(".island").nth(0).click()
-                wait_new_activity(page, -999)
-                solve_current(page)
+                types4 = set()
+                play_island(page, 0, types4)         # 离线走完整一岛（P1-05）
                 if errors4:
                     raise Fail("errors offline: " + " | ".join(errors4[:5]))
-                report("T4 断网离线完整可玩（SW 缓存）", True)
+                report("T4 断网离线完整可玩（整岛5活动, SW 缓存）", True)
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t4_FAIL.png"))
@@ -394,26 +415,22 @@ def main():
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 page.wait_for_timeout(500)
                 page.screenshot(path=os.path.join(SHOTS, "t5_map_portrait.png"))
+                # 解锁全部类型: 竖屏矩阵覆盖高阶活动布局（P1-05）
+                page.evaluate("""() => { const d = window.__KM.Store.data;
+                  for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
+                  window.__KM.Store.save(); }""")
+                SIZE_VIOLATIONS.clear()
                 types = set()
-                play_island(page, 5, types, shots_prefix="t5")
-                # 尺寸断言
-                page.locator(".island").nth(0).click()
-                wait_new_activity(page, -999)
-                page.wait_for_selector(".countable, .tray .item, .balloon, .side, .srcgrp .item", timeout=8000)
-                small = page.evaluate("""() => {
-                  const bad = [];
-                  for(const sel of ['.countable','.ncard','.balloon','#btnHome','#btnReplay','.tray .item']){
-                    document.querySelectorAll(sel).forEach(e=>{
-                      const r = e.getBoundingClientRect();
-                      if(r.width>0 && (r.width<86 || r.height<86)) bad.push(sel+':'+Math.round(r.width)+'x'+Math.round(r.height));
-                    });
-                  }
-                  return bad; }""")
-                if small:
-                    raise Fail("touch targets <86px: " + ", ".join(small[:6]))
+                play_island(page, 5, types, shots_prefix="t5", audit="t5")
+                play_island(page, 1, types, audit="t5")
+                play_island(page, 2, types, audit="t5")
+                if SIZE_VIOLATIONS:
+                    raise Fail("portrait touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
+                if len(types) < 5:
+                    raise Fail(f"portrait matrix covered too few types: {sorted(types)}")
                 if errors5:
                     raise Fail("errors: " + " | ".join(errors5[:5]))
-                report("T5 webkit 竖屏走查+触摸目标≥88px", True, f"types={sorted(types)}")
+                report("T5 webkit 竖屏矩阵(3岛)+触摸目标≥88px", True, f"types={sorted(types)}")
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t5_FAIL.png"))
