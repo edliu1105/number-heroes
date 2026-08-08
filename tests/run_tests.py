@@ -161,9 +161,9 @@ def solve_current(page, wrong_first=False, slow_count=False, audit=None):
           return sides.findIndex(s => s.dataset.char === '{ans}'); }}""")
         COMPARE_SIDES.append('L' if idx == 0 else 'R')
         if wrong_first:
-            # 错误路径: 点错侧 → 引导示范点数 → 星星胜者标识出现 → 再点对（P0-03 视觉胜者断言）
+            # 错误路径: 点错侧 → 引导示范点数 → 星星胜者标识出现在正确一侧 → 再点对（P0-03 视觉胜者断言）
             page.locator(f".side:not([data-char='{ans}'])").first.click(timeout=5000)
-            page.wait_for_selector(".crown", timeout=25000)
+            page.wait_for_selector(f".side[data-char='{ans}'] .crown", timeout=25000)
             page.wait_for_timeout(300)
             page.screenshot(path=os.path.join(SHOTS, "t1_compare_crown.png"))
             deadline = time.time() + 15

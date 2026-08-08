@@ -880,7 +880,7 @@ function askNumber(stage, ctx, cfg){
   });
 }
 
-/* ============ 9. 六种活动 ============ */
+/* ============ 9. 七种活动 ============ */
 const Activities = {
 
   /* 数一数: 一一对应 + 基数 */
@@ -1315,7 +1315,7 @@ class ActCtx {
     this.lastTouch = Date.now();
     this.nudges = 0;
     this.assisted = false;      // 任何幽灵手介入(首遇示范/空闲指点) → 本题只能计 hinted（P0-02）
-    // 角色/物品轮换: 让 36 个角色都持续登场
+    // 角色/物品轮换: 让 39 个角色都持续登场
     const rot = Store.data.rot, irot = Store.data.irot;
     rot[world.id] = rot[world.id] || 0; irot[world.id] = irot[world.id] || 0;
     this.host = world.chars[rot[world.id] % world.chars.length];

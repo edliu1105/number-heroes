@@ -122,7 +122,7 @@
 ## 6. 视觉与素材
 
 - 统一美术风格串（每张图复用保证一致性）：*cute chibi cartoon, flat colors with soft cel shading, thick clean dark-brown outlines, big sparkling eyes, friendly smile, sticker style, children's picture-book aesthetic, transparent background, no text, no watermark*。
-- 清单：39 角色 + 8 物品（桃子/包子/葫芦/能量星/骨头饼干/网球/曲奇/苹果）+ 6 岛屿 + 7 背景 + PWA 图标（PIL 合成）= 60 张。
+- 清单：39 角色 + 8 物品（桃子/包子/葫芦/能量星/骨头饼干/网球/曲奇/苹果）+ 6 岛屿 + 7 背景 = 60 张游戏素材, 另有 3 张 PWA 图标（PIL 合成）。
 - 全部 codex CLI → GPT Image 2，1024×1024 透明 PNG（背景 1536×1024 或 1024×1024 不透明）；codex 用 magick 验证四角 alpha=0。
 - 优化：PIL 缩 512px + 256 色量化（背景 1024px）。目标 assets 总量 < 8MB（离线缓存友好）。
 - 版权三层：先近似卡通版 → 被拒/质量差改致敬版（同配色同特征换名）→ 公开部署前向家长确认处理方式。
