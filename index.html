@@ -123,7 +123,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .taskcard .pile i{width:1.8vmin;height:1.8vmin;min-width:9px;min-height:9px;border-radius:50%;background:#f59f00;border:.3vmin solid #e8590c}
 .taskcard .pile.big{outline:.6vmin solid #37b24d;outline-offset:.4vmin;background:#ebfbee;position:relative}
 .taskcard .pile.big::after{content:"👆";position:absolute;bottom:-3.6vmin;left:50%;transform:translateX(-50%);font-size:3vmin}
-.crown{position:absolute;top:-7vmin;left:50%;transform:translateX(-50%);width:9vmin;min-width:52px;z-index:8;animation:popin .4s,idlebob 1.6s .4s ease-in-out infinite}
+.crown{position:absolute;left:50%;transform:translate(-50%,-105%);width:9vmin;min-width:52px;z-index:8;animation:popin .4s,idlebob 1.6s .4s ease-in-out infinite}
 .duel{position:absolute;inset:10% 2% 6%;display:flex;gap:2%;z-index:4}
 .duel .side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border-radius:4vmin;transition:transform .15s;padding-bottom:1vmin}
 .duel .side:active{transform:scale(.96)}
@@ -440,13 +440,18 @@ const Speech = {
     try{ u = this._mkUtter(text, opts); }catch(e){ res(); return; }
     this.log.push({t:Date.now(), text});
     const gen = this._gen;
+    const uid = ++this._uidSeq || (this._uidSeq = 1);
     let settled = false, started = false;
     this._instrActive = !opts.isCount;
+    if(!opts.isCount) this._instrUid = uid;        // 当前指令话语标识
     if(opts.isCount) this._activeCountSay = (this._activeCountSay || 0) + 1;  // drain 追踪 say 通道数词（P1-01）
     if(!opts.isCount) Sfx.duck(true);              // 语音期间音效闪避（U7）
+    // 旧回调退休契约（§9.6/P1-02）: 事件与看门狗只在"同代际且仍是当前话语"时才允许改全局状态;
+    // 过期回调只清理自身引用并放行 Promise, 不得污染新语境
     const finish = () => { if(!settled){ settled = true;
-      if(!opts.isCount){ this._instrActive = false; Sfx.duck(false); }
-      else { this._activeCountSay = Math.max(0, (this._activeCountSay || 1) - 1); }
+      const fresh = gen === this._gen;
+      if(!opts.isCount){ if(fresh && this._instrUid === uid){ this._instrActive = false; Sfx.duck(false); } }
+      else if(fresh){ this._activeCountSay = Math.max(0, (this._activeCountSay || 1) - 1); }
       this._release(u); res(); } };
     u.onstart = () => { started = true; this._markWork(); };
     u.onboundary = () => { started = true; this._markWork(); };
@@ -520,10 +525,12 @@ const Speech = {
     let u;
     try{ u = this._mkUtter(word, {rate:1.0, pitch:1.15}); }catch(e){ return; }
     this.log.push({t:Date.now(), text:word, count:true});
+    const gen = this._gen;
     const q = {u, done:false};
     const fin = () => {
       if(q.done) return;
       q.done = true; this._release(u);
+      if(gen !== this._gen) return;               // 过期数词回调: 只自清理, 不动新语境队列（P1-02）
       this._countQ = this._countQ.filter(x => x !== q);
       if(this._latestCount && this._countQ.length <= 1){
         const w = this._latestCount; this._latestCount = null; this._enqCount(w);
@@ -891,7 +898,8 @@ const Activities = {
     });
     const intro = `${CHARS[ctx.host]}想知道，这里有几${it.cl}${it.n}？点一点，数一数吧！`;
     App.setInstruction(intro); sayAs(host, intro);
-    ctx.nudge(intro, items[0]);
+    // 动态锚点: 数数阶段→下一个未数物品; 答题阶段→答案牌区（不指具体牌, 不泄答案）
+    ctx.nudge(intro, () => stage.querySelector('.countable:not(.counted)') || stage.querySelector('.cards'));
     ctx.maybeDemo([items[0]]);
     let counted = 0;
     await new Promise(res => {
@@ -941,7 +949,8 @@ const Activities = {
     if(!ctx.alive()) return {aborted:true};
     const cover = el('div','flashcover', pad); cover.textContent = '☁️';
     const q = `刚才有几${it.cl}${it.n}？`;
-    App.setInstruction(q); await sayAs(host, q); ctx.nudge(q);
+    App.setInstruction(q); await sayAs(host, q);
+    ctx.nudge(q, () => stage.querySelector('.cards'));
     const {firstTry} = await askNumber(stage, ctx, {
       correct:n, hostEl:host, max:5, reask:`刚才有几${it.cl}${it.n}呀？`,
       doneLine:`刚才有${qtyCN(n)}${it.cl}${it.n}！你的小眼睛真亮！`,
@@ -971,7 +980,10 @@ const Activities = {
     const pos = scatterPositions(vals.length);
     stage.dataset.answer = target;
     const intro = `数一数卡片上的点点，找一找，数字${NUM_CN[target]}藏在哪个气球里？`;
-    App.setInstruction(intro); sayAs(host, intro); ctx.nudge(`找一找，数字${NUM_CN[target]}在哪里？`);
+    App.setInstruction(intro); sayAs(host, intro);
+    // 动态锚点: 正确气球（指点=脚手架置 assisted, 教对不教错）
+    ctx.nudge(`找一找，数字${NUM_CN[target]}在哪里？`,
+      () => [...stage.querySelectorAll('.balloon')].find(x => +x.dataset.value === target && !x.classList.contains('popped')));
     let firstTry = true;
     const balloons = [];
     await new Promise(res => {
@@ -1029,7 +1041,9 @@ const Activities = {
     const setBig = () => { if(big){ big.remove(); big = null; } if(fed > 0){ big = el('div','bigcount', stage); big.textContent = fed; } };
     const intro = `我是${CHARS[ctx.host]}！我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了，就按绿色的勾勾告诉我哦！`;
     App.setInstruction(intro); sayAs(host, intro);
-    ctx.nudge(`我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了就按绿色的勾勾！`);
+    // 动态锚点: 喂够了→绿勾; 还没够→下一个可喂物品（不会诱导多喂）
+    ctx.nudge(`我想吃${qtyCN(n)}${it.cl}${it.n}。喂好了就按绿色的勾勾！`,
+      () => (fed >= n && btnDone) ? btnDone : tray.querySelector('.item:not(.dim)'));
     const feedOne = b => {
       fed++;
       b.classList.add('dim');
@@ -1164,10 +1178,12 @@ const Activities = {
           if(!ctx.alive()) return;
           await Speech.say(`${CHARS[sides[1].charId]}的有…`); await demoCount(ctx, sides[1].its);
           if(!ctx.alive()) return;
-          // 视觉胜者标识（P0-03）: 星星悬于多的一侧角色头顶 + 该侧放大
+          // 视觉胜者标识（P0-03）: 星星锚定在多的一侧角色头顶 + 该侧放大
           if(!winner.s.querySelector('.crown')){
-            const cr = imgTag(itemImg('star'), 'crown', winner.s);
             winner.s.style.position = 'relative';
+            const cr = imgTag(itemImg('star'), 'crown', winner.s);
+            const ch = winner.s.querySelector('.dchar');
+            if(ch) cr.style.top = ch.offsetTop + 'px';
           }
           winner.s.classList.remove('win'); void winner.s.offsetWidth; winner.s.classList.add('win');
           const line = `${NUM_CN[winner.cnt]}比${NUM_CN[loser.cnt]}多，${CHARS[winner.charId]}的多！点一点${CHARS[winner.charId]}吧！`;
@@ -1200,7 +1216,9 @@ const Activities = {
     const slots = [];
     for(let i = 0; i < a + b; i++) slots.push(el('div','slot', bar));
     const intro = `${CHARS[cA]}有${qtyCN(a)}${it.cl}，${CHARS[cB]}有${qtyCN(b)}${it.cl}。把${it.n}都放到中间，合起来！`;
-    App.setInstruction(intro); Speech.say(intro); ctx.nudge(`点一点${it.n}，把它们放到中间吧！`);
+    App.setInstruction(intro); Speech.say(intro);
+    ctx.nudge(`点一点${it.n}，把它们放到中间吧！`,
+      () => stage.querySelector('.srcgrp .item:not(.dim)') || stage.querySelector('.cards'));
     let placed = 0;
     const placedImgs = [];
     ctx.maybeDemo([itemsA[0], bar]);
@@ -1258,7 +1276,8 @@ const Activities = {
     await sayAs(host, `又来了${qtyCN(b)}${it.cl}！`);
     if(!ctx.alive()) return {aborted:true};
     const cq = `现在一共有几${it.cl}${it.n}？点一点，数一数吧！`;
-    App.setInstruction(cq); sayAs(host, cq); ctx.nudge(cq, items[0]);
+    App.setInstruction(cq); sayAs(host, cq);
+    ctx.nudge(cq, () => stage.querySelector('.countable:not(.counted)') || stage.querySelector('.cards'));
     ctx.maybeDemo([items[0]]);                     // 首遇: 示范点数手势（P0-03）
     let counted = 0;
     await new Promise(res => {
@@ -1320,10 +1339,12 @@ class ActCtx {
     const self = this;
     setTimeout(() => { if(self.alive()) Ghost.run(self, anchors); }, T(1400));
   }
-  nudge(text, demoAnchor){
+  nudge(text, anchorOrFn){
     // 轻声提醒: 9s 无操作且引擎空闲时重复当前指令, 最多2次; 第2次附带幽灵手指点（U3/U8）。
     // 语音逐字重播＝无障碍重复(不含解信息, 不降级 outcome); 幽灵手指点＝脚手架(置 assisted)。见 DESIGN §9.1。
-    this._nudgeText = text; this._nudgeAnchor = demoAnchor || this._nudgeAnchor || null;
+    // anchorOrFn 为函数时每次指点动态求值——永远指向"当前正确的下一步", 不会教错（P0-03）。
+    this._nudgeText = text;
+    if(anchorOrFn) this._nudgeAnchor = anchorOrFn;
     if(this._nudgeTimer) return;
     const iv = setInterval(() => {
       if(!this.alive()){ clearInterval(iv); return; }
@@ -1332,9 +1353,10 @@ class ActCtx {
         this.nudges++; this.lastTouch = Date.now();
         Speech.politeSay(this._nudgeText);
         if(this.nudges >= 2){
-          const a = (this._nudgeAnchor && this._nudgeAnchor.isConnected) ? this._nudgeAnchor
-                  : document.querySelector('#stage .countable:not(.counted), #stage .cards, #stage .balloon, #stage .tray .item:not(.dim), #stage .srcgrp .item:not(.dim), #stage .side');
-          if(a){ this.assisted = true; Ghost.run(this, [a]); }
+          let a = this._nudgeAnchor;
+          try{ if(typeof a === 'function') a = a(); }catch(e){ a = null; }
+          if(a && a.isConnected){ this.assisted = true; Ghost.run(this, [a]); }
+          // 无有效锚点 → 只重复语音, 不指点(宁缺毋错)
         }
       }
     }, T(3000));

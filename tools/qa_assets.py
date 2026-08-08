@@ -116,7 +116,7 @@ def main():
     if reviewed:
         print(f"({len(reviewed)} reviewed-allowlist entries)")
     if adv:
-        print(f"({len(adv)} ADVISORY entries — NEED EYEBALL, not auto-passed):")
+        print(f"({len(adv)} UNREVIEWED ADVISORY entries — gate FAILS until eyeballed & added to REVIEWED):")
         for k, v in adv.items():
             print("  ", k, v)
     chars = [a["file"] for a in manifest if "/char/" in a["file"]]
@@ -126,7 +126,8 @@ def main():
     contact_sheet(chars, "review/sheet_chars.png", cols=6)
     contact_sheet(items + isls, "review/sheet_items_islands.png", cols=7)
     contact_sheet(bgs, "review/sheet_bgs.png", cols=4, cell=300)
-    return 0 if not bad else 1
+    # 未复核的 ADVISORY 同样使门槛失败（P2-05）: 新素材必须目检并登记 REVIEWED 后才放行
+    return 0 if (not bad and not adv) else 1
 
 if __name__ == "__main__":
     sys.exit(main())

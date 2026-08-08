@@ -160,7 +160,23 @@ def solve_current(page, wrong_first=False, slow_count=False, audit=None):
           const sides = [...document.querySelectorAll('.side')];
           return sides.findIndex(s => s.dataset.char === '{ans}'); }}""")
         COMPARE_SIDES.append('L' if idx == 0 else 'R')
-        page.locator(f".side[data-char='{ans}']").click(timeout=5000)
+        if wrong_first:
+            # 错误路径: 点错侧 → 引导示范点数 → 星星胜者标识出现 → 再点对（P0-03 视觉胜者断言）
+            page.locator(f".side:not([data-char='{ans}'])").first.click(timeout=5000)
+            page.wait_for_selector(".crown", timeout=25000)
+            page.wait_for_timeout(300)
+            page.screenshot(path=os.path.join(SHOTS, "t1_compare_crown.png"))
+            deadline = time.time() + 15
+            while time.time() < deadline:
+                if page.locator(".side").count() == 0:
+                    break
+                try:
+                    page.locator(f".side[data-char='{ans}']").click(timeout=2000)
+                except Exception:
+                    pass
+                page.wait_for_timeout(600)
+        else:
+            page.locator(f".side[data-char='{ans}']").click(timeout=5000)
     elif act == "compose":
         deadline = time.time() + 25
         while time.time() < deadline:
@@ -302,6 +318,32 @@ def main():
                     raise Fail("home exited on single tap (expect 2-tap confirm)")
                 page.locator("#btnHome").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=5000)
+                # 比较错误路径: 找一个 compare, 点错→断言星星胜者标识出现→纠正完成（P0-03）
+                crown_done = False
+                for isl in (3, 4, 5):
+                    if crown_done: break
+                    page.locator(".island").nth(isl).click(timeout=5000)
+                    wait_new_activity(page, -999)
+                    while True:
+                        st = state(page)
+                        if st["cele"]:
+                            page.locator("#cele").click(timeout=4000)
+                            page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=15000)
+                            break
+                        page.wait_for_timeout(250)
+                        if st["act"] == "compare" and not crown_done:
+                            solve_current(page, wrong_first=True)
+                            crown_done = True
+                        else:
+                            solve_current(page)
+                        try:
+                            wait_new_activity(page, st["aid"])
+                        except Fail:
+                            if state(page)["scene"] == "sceneMap":
+                                break
+                            raise
+                if not crown_done:
+                    raise Fail("no compare encountered for crown-path test")
                 # 比较活动位置平衡（P0-01）: 主走查 seed 固定可能碰巧同侧 → 独立 seed 重载专测平衡。
                 # seed 7/8/11 经 find_balance_seed.py 实测均产生两侧(7→R,R,L; 8→L,R; 11→R,L), 确定性稳定;
                 # 真 bug(固定单侧)时任何 seed 都单侧, 必然失败
