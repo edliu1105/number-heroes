@@ -4,3 +4,4 @@ tools/raw_backup/
 tools/logs/
 review/shots/
 review/*.log
+tools/tribute_backup/
