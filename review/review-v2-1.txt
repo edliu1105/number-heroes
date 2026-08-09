@@ -4344,3 +4344,1024 @@ exec
 624: if __name__ == "__main__":
 625:     main()
 
+codex
+目前已确认两类不是“观感偏好”的实质问题：一是多阶段关卡只更新重听文案、未更新空闲提醒文案，9 秒后会出现“手指指向当前目标、语音却让孩子做上一阶段”的冲突；二是 `independents` 只在内存里累加后直接丢弃，规格所说的独立完成比例没有被记录。还在核对角色反应实现度、骰子/偷饼干异步竞态及回归测试盲区。
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); git status --short; git log --oneline -8; git diff --stat; git diff -- index.html | Select-Object -First 240' in D:\ClaudeCode\kidmath
+ succeeded in 617ms:
+26b80a3 v2 收尾: SW 缓存版本 km-v2 / 线上冒烟脚本适配 v2 关卡制
+dd5b64e v2.0: 六岛专属游戏+三关递进制全面重做
+b1c656c README 加正式地址; 线上冒烟全绿记录
+d23ba23 第六轮 APPROVE 后收尾: 非阻塞建议三项(注释/文档措辞/皇冠断言属侧化)
+c3ef6d3 第五轮审查修复: 动态锚点函数(教对不教错)/语音回调代际+uid双闸退休/QA硬门槛/皇冠锚定角色/比较错误路径断言
+b1848d8 第四轮审查修复: assisted全覆盖/比较图示卡+胜者标识/drain全通道/stopAll冷却窗/存储深度校验/QA哈希allowlist/compose分组上限/WebKit七活动矩阵/慢TTS用例
+56bf42c 备份致敬版素材目录加入忽略清单
+37000a6 第三轮审查修复: 比较侧位平衡/assisted计分/首遇引导补全/计数排空/喂食锁/88px/场景卸载/SW waitUntil/存储校验 + 新增蜘蛛侠三人组
+ review/review-v2-1.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+warning: unable to access 'C:\Users\edliu/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\edliu/.config/git/ignore': Permission denied
+warning: in the working copy of 'review/review-v2-1.txt', CRLF will be replaced by LF the next time Git touches it
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); function GitText($rev){ (git show "$rev`:index.html") -join "`n" }; function Section($txt,$a,$b){ $s=$txt.IndexOf($a); $e=$txt.IndexOf($b,$s); if($s -lt 0 -or $e -lt 0){ return '"'' }; "'$txt.Substring($s,$e-$s) }; function H($s){ $sha=[Security.Cryptography.SHA256]::Create(); ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($s)))).Replace('"'-','').Substring(0,16) }; "'$old=GitText '"'d23ba23'; "'$new=GitText '"'HEAD'; "'$sections=@(@('"'Speech','/* ============ 4. Speech','/* ============ 5. Sfx'),@('Sfx','/* ============ 5. Sfx','/* ============ 6.'),@('Store','/* ============ 3. Store','/* ============ 4. Speech')); foreach("'$x in $sections){ $o=Section $old $x[1] $x[2]; $n=Section $new $x[1] $x[2]; [PSCustomObject]@{Section=$x[0]; OldHash=H $o; NewHash=H $n; Same=($o -ceq $n); OldChars=$o.Length; NewChars=$n.Length} } | Format-Table -AutoSize' in D:\ClaudeCode\kidmath
+2026-08-09T02:10:00.523175Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.8 seconds
+Output:
+At line:2 char:902
++ ... ame=($o -ceq $n); OldChars=$o.Length; NewChars=$n.Length} } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : EmptyPipeElement
+ 
+
+ exited 1 in 803ms:
+At line:2 char:902
++ ... ame=($o -ceq $n); OldChars=$o.Length; NewChars=$n.Length} } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : EmptyPipeElement
+ 
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); function GitText($rev){ (git show "$rev`:index.html") -join "`n" }; function Section($txt,$a,$b){ $s=$txt.IndexOf($a); $e=$txt.IndexOf($b,$s); if($s -lt 0 -or $e -lt 0){ return '"'' }; "'$txt.Substring($s,$e-$s) }; function H($s){ $sha=[Security.Cryptography.SHA256]::Create(); ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($s)))).Replace('"'-','').Substring(0,16) }; "'$old=GitText '"'d23ba23'; "'$new=GitText '"'HEAD'; "'$sections=@(@('"'Speech','/* ============ 4. Speech','/* ============ 5. Sfx'),@('Sfx','/* ============ 5. Sfx','/* ============ 6.'),@('Store','/* ============ 3. Store','/* ============ 4. Speech')); "'$out=@(); foreach($x in $sections){ $o=Section $old $x[1] $x[2]; $n=Section $new $x[1] $x[2]; $out += [PSCustomObject]@{Section=$x[0]; OldHash=H $o; NewHash=H $n; Same=($o -ceq $n); OldChars=$o.Length; NewChars=$n.Length} }; $out | Format-Table -AutoSize' in D:\ClaudeCode\kidmath
+ succeeded in 884ms:
+Get-History : Cannot bind parameter 'Id'. Cannot convert value "/* ============ 4. Speech（iOS 军规引擎） ============ */
+const Speech = {
+  noTTS: !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window),
+  unlocked:false, everWorked:false, voice:null, voices:[],
+  lastReq:0, welcomeText:'', welcomeAt:0, _respoke:false,
+  _refs:[], _pend:null, _cancelT:null, _gen:0,
+  _countQ:[], _latestCount:null,
+  log:[],
+  init(){
+    if(this.noTTS) return;
+    const load = () => { try{ this.voices = speechSynthesis.getVoices() || []; }catch(e){ this.voices=[]; } 
+this.pickVoice(); };
+    load();
+    try{
+      speechSynthesis.onvoiceschanged = () => {
+        const hadZh = !!this.voice;
+        load();
+        // 军规6: 声音列表晚到 → 用正确声音补说第一句（严格限定条件, 见 DESIGN v2）
+        if(this.unlocked && !this.everWorked && !this._respoke && this.voice && !hadZh
+           && Date.now() - this.welcomeAt < 10000 && this.welcomeText){
+          this._respoke = true;
+          const gen = this._gen;
+          setTimeout(() => {
+            if(gen !== this._gen) return;
+            if(speechSynthesis.speaking || speechSynthesis.pending) return;   // 军规7: 不插嘴
+            if(Date.now() - this.lastReq < 1500) return;
+            this.say(this.welcomeText);
+          }, 300);
+        }
+      };
+    }catch(e){}
+    document.addEventListener('visibilitychange', () => {
+      if(!document.hidden){ try{ speechSynthesis.resume(); }catch(e){} }
+    });
+    window.addEventListener('pageshow', () => {
+      // bfcache 恢复: 全量清场（含底层引擎队列, 带180ms冷却窗）+ resume（§9.6）
+      this.stopAll();
+      try{ speechSynthesis.resume(); }catch(e){}
+    });
+  },
+  pickVoice(){
+    const stored = Store.data && Store.data.voiceURI;
+    const zh = this.voices.filter(v => /^zh/i.test(v.lang) || /中文|Chinese/i.test(v.name));
+    if(stored){ const m = this.voices.find(v => v.voiceURI === stored); if(m){ this.voice = m; return; } }
+    const score = v => (/zh[-_]CN/i.test(v.lang) ? 4 : 0)
+      + (/Tingting|Ting-Ting|婷婷/i.test(v.name) ? 3 : 0)
+      + (/Xiaoxiao|晓晓/i.test(v.name) ? 3 : 0)
+      + (v.localService ? 1 : 0) + (v.default ? .5 : 0);
+    this.voice = zh.sort((a,b) => score(b) - score(a))[0] || null;
+  },
+  unlock(text){
+    // 军规1: 必须在 click 抬起手势的同步调用栈内首次 speak
+    this.unlocked = true; this.welcomeText = text; this.welcomeAt = Date.now();
+    this.say(text);
+    setTimeout(() => { if(!this.everWorked) UI.showNoSound(); }, 3500);
+  },
+  /* 指令/反馈通道: 最新覆盖 + 安全打断(cancel 后 ≥180ms) */
+  say(text, opts){
+    opts = opts || {};
+    if(this.noTTS || !this.unlocked || !text) return Promise.resolve();
+    if(opts.polite){
+      try{ if(speechSynthesis.speaking || speechSynthesis.pending) return Promise.resolve(); }catch(e){}
+      if(Date.now() - this.lastReq < 1500) return Promise.resolve();
+    }
+    this.lastReq = Date.now();
+    try{ speechSynthesis.resume(); }catch(e){}   // 军规4
+    let busy = false;
+    try{ busy = speechSynthesis.speaking || speechSynthesis.pending; }catch(e){}
+    if(busy || this._cancelT){
+      return new Promise(res => {
+        if(this._pend) this._pend.res();          // 军规8: 旧的被最新覆盖，等待者立即放行
+        this._pend = {text, opts, res};
+        if(!this._cancelT){
+          try{ speechSynthesis.cancel(); }catch(e){}
+          this._instrActive = false;
+          this._countQ.length = 0; this._latestCount = null;
+          this._cancelT = setTimeout(() => {      // 军规2: cancel 后 ≥150ms
+            this._cancelT = null;
+            const p = this._pend; this._pend = null;
+            if(p) this._speakNow(p.text, p.opts, p.res);
+          }, 180);
+        }
+      });
+    }
+    return new Promise(res => this._speakNow(text, opts, res));
+  },
+  politeSay(text){ return this.say(text, {polite:true}); },
+  _mkUtter(text, opts){
+    const u = new SpeechSynthesisUtterance(text);
+    if(this.voice) u.voice = this.voice;
+    u.lang = 'zh-CN';                              // 恒设 lang（无 voice 时兜底）
+    u.rate = opts.rate || .92; u.pitch = opts.pitch || 1.1; u.volume = 1;
+    this._refs.push(u);                            // 军规6: 防 GC
+    return u;
+  },
+  _release(u){ const i = this._refs.indexOf(u); if(i >= 0) this._refs.splice(i, 1); },
+  _markWork(){ this.everWorked = true; UI.hideNoSound(); },
+  _speakNow(text, opts, res){
+    let u;
+    try{ u = this._mkUtter(text, opts); }catch(e){ res(); return; }
+    this.log.push({t:Date.now(), text});
+    const gen = this._gen;
+    const uid = ++this._uidSeq || (this._uidSeq = 1);
+    let settled = false, started = false;
+    this._instrActive = !opts.isCount;
+    if(!opts.isCount) this._instrUid = uid;        // 当前指令话语标识
+    if(opts.isCount) this._activeCountSay = (this._activeCountSay || 0) + 1;  // drain 追踪 say 通道数词（P1-01）
+    if(!opts.isCount) Sfx.duck(true);              // 语音期间音效闪避（U7）
+    // 旧回调退休契约（§9.6/P1-02）: 事件与看门狗只在"同代际且仍是当前话语"时才允许改全局状态;
+    // 过期回调只清理自身引用并放行 Promise, 不得污染新语境
+    const finish = () => { if(!settled){ settled = true;
+      const fresh = gen === this._gen;
+      if(!opts.isCount){ if(fresh && this._instrUid === uid){ this._instrActive = false; Sfx.duck(false); } }
+      else if(fresh){ this._activeCountSay = Math.max(0, (this._activeCountSay || 1) - 1); }
+      this._release(u); res(); } };
+    u.onstart = () => { started = true; this._markWork(); };
+    u.onboundary = () => { started = true; this._markWork(); };
+    u.onend = () => { this._markWork(); finish(); };
+    u.onerror = e => { if(e && e.error === 'interrupted'){} finish(); };
+    // 军规3: onend 不可信 → 超时兜底
+    const tmo = opts.tmo || Math.max(2500, text.length * 380);
+    setTimeout(finish, tmo);
+    try{ speechSynthesis.resume(); speechSynthesis.speak(u); }catch(e){ finish(); return; }
+    // 健康信号轮询（250/450ms）
+    [250, 450].forEach(d => setTimeout(() => {
+      try{ if(speechSynthesis.speaking || speechSynthesis.pending) this._markWork(); }catch(e){}
+    }, d));
+    // 被吞恢复: 700ms 无事件且引擎全空闲 → 同文本重试一次（generation token 保护）
+    setTimeout(() => {
+      if(settled || started || gen !== this._gen || this._cancelT) return;
+      let idle = false;
+      try{ idle = !speechSynthesis.speaking && !speechSynthesis.pending; }catch(e){}
+      if(idle){
+        try{
+          const u2 = this._mkUtter(text, opts);
+          u2.onend = () => { this._markWork(); finish(); };
+          u2.onerror = () => finish();
+          u2.onstart = () => this._markWork();
+          speechSynthesis.speak(u2);
+          setTimeout(() => { this._release(u2); }, tmo);
+        }catch(e){}
+      }
+    }, 700);
+  },
+  /* 计数词通道: 有序自然队列（不 cancel, 保听觉一一对应）; 积压>2 只留最新（军规8收敛）。
+     若指令语音正在播（孩子等不及开始点数）→ 首个数词走安全打断通道抢占指令 */
+  countSay(word){
+    if(this.noTTS || !this.unlocked) return;
+    if(this._instrActive || this._cancelT){
+      this.say(word, {rate:1.05, pitch:1.15, tmo:1600, isCount:true});
+      return;
+    }
+    this.lastReq = Date.now();
+    try{ speechSynthesis.resume(); }catch(e){}
+    this._countQ = this._countQ.filter(q => !q.done);
+    if(this._countQ.length >= 3) return;           // 防御性硬上限（正常被 countBusy 背压挡住, 军规8: 绝不排长队）
+    this._enqCount(word);
+  },
+  /* 输入背压: 计数词积压≥2 时活动应暂缓接受新的计数点击（保证听觉序列完整不丢词） */
+  countBusy(){
+    if(this.noTTS || !this.unlocked) return false;
+    this._countQ = this._countQ.filter(q => !q.done);
+    if(this._countQ.length >= 2) return true;
+    if(this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount) return true;
+    return false;
+  },
+  /* 计数队列排空（P1-01）: 末数播完(或有界看门狗到期)再进入提问。
+     覆盖三处在途数词: 自然队列 _countQ / cancel 等待窗内的 pending count / say 通道在播的 isCount */
+  drain(maxMs){
+    const deadline = Date.now() + (maxMs || 4000);
+    return new Promise(res => {
+      const chk = () => {
+        this._countQ = this._countQ.filter(q => !q.done);
+        const busyCount = this._countQ.length > 0
+          || (this._cancelT && this._pend && this._pend.opts && this._pend.opts.isCount)
+          || (this._activeCountSay || 0) > 0;
+        if(!busyCount || Date.now() > deadline) res();
+        else setTimeout(chk, 120);
+      };
+      chk();
+    });
+  },
+  _enqCount(word){
+    let u;
+    try{ u = this._mkUtter(word, {rate:1.0, pitch:1.15}); }catch(e){ return; }
+    this.log.push({t:Date.now(), text:word, count:true});
+    const gen = this._gen;
+    const q = {u, done:false};
+    const fin = () => {
+      if(q.done) return;
+      q.done = true; this._release(u);
+      if(gen !== this._gen) return;               // 过期数词回调: 只自清理, 不动新语境队列（P1-02）
+      this._countQ = this._countQ.filter(x => x !== q);
+      if(this._latestCount && this._countQ.length <= 1){
+        const w = this._latestCount; this._latestCount = null; this._enqCount(w);
+      }
+    };
+    u.onstart = () => this._markWork();
+    u.onend = () => { this._markWork(); fin(); };
+    u.onerror = fin;
+    // 引擎从未出声(疑似静音/不可用)时用短看门狗, 避免背压把游戏节奏卡成 1.6s/次
+    setTimeout(fin, this.everWorked ? 1600 : 500);
+    this._countQ.push(q);
+    try{ speechSynthesis.speak(u); }catch(e){ fin(); }
+  },
+  stopAll(){
+    this._gen++;
+    this._instrActive = false;
+    this._activeCountSay = 0;
+    Sfx.duck(false);
+    if(this._pend){ this._pend.res(); this._pend = null; }
+    if(this._cancelT){ clearTimeout(this._cancelT); this._cancelT = null; }
+    this._countQ.length = 0; this._latestCount = null;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    this.lastReq = Date.now();                      // 冷却 1.5s, 抑制 polite 兜底
+    // 军规2: cancel 后 180ms 冷却窗——期间到来的 say() 走 _pend 排队而不是立即 speak
+    this._cancelT = setTimeout(() => {
+      this._cancelT = null;
+      const p = this._pend; this._pend = null;
+      if(p) this._speakNow(p.text, p.opts, p.res);
+    }, 180);
+  },
+  diag(){
+    let sp = false, pe = false;
+    try{ sp = speechSynthesis.speaking; pe = speechSynthesis.pending; }catch(e){}
+    return {supported:!this.noTTS, unlocked:this.unlocked, everWorked:this.everWorked,
+      voicesTotal:this.voices.length,
+      zhVoices:this.voices.filter(v => /^zh/i.test(v.lang)).map(v => v.name + '(' + v.lang + ')'),
+      chosen:this.voice ? this.voice.name + ' (' + this.voice.lang + ')' : '(无·将用 lang=zh-CN 兜底)',
+      speaking:sp, pending:pe};
+  }
+};
+" to type "System.Int64". Error: "Input string was not in a correct format."
+At line:2 char:841
++ ...  $x[2]; $out += [PSCustomObject]@{Section=$x[0]; OldHash=H $o; NewHas ...
++                                                                ~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-History], ParameterBindingException
+    + FullyQualifiedErrorId : CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.GetHistoryCommand
+ 
+Get-History : Cannot bind parameter 'Id'. Cannot convert value "/* ============ 5. Sfx（WebAudio 合成音效） ============ */
+const Sfx = {
+  ctx:null, master:null, silentEl:null,
+  ensure(){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      if(this.ctx && this.ctx.state === 'closed'){ this.ctx = null; this.master = null; }  // closed 不可恢复 → 重建（I10）
+      if(!this.ctx){
+        this.ctx = new AC();
+        this.master = this.ctx.createGain(); this.master.gain.value = .5;
+        this.master.connect(this.ctx.destination);
+      }
+      // iOS 'interrupted'（电话/Siri）与 'suspended' 都在手势内恢复（I10）
+      if(this.ctx.state !== 'running'){ const p = this.ctx.resume(); if(p && p.catch) p.catch(() => {}); }
+      // pagehide 暂停过的无声保活 loop 在下一次手势内恢复
+      if(this.silentEl && this.silentEl.paused && !document.hidden && Store.data.keepAlive){
+        const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {});
+      }
+    }catch(e){}
+  },
+  duck(on){ try{ if(this.master) this.master.gain.value = on ? .16 : .5; }catch(e){} },
+  unlock(){
+    this.ensure();
+    try{ const b = this.ctx.createBuffer(1, 1, 22050); const s = this.ctx.createBufferSource();
+      s.buffer = b; s.connect(this.ctx.destination); s.start(0); }catch(e){}
+    // 军规5: 循环无声 <audio> 提升媒体会话（经验性 workaround, 非平台保证; 家长面板可关）
+    try{
+      if(!Store.data.keepAlive) return;
+      if(!this.silentEl){
+        const a = document.createElement('audio');
+        a.setAttribute('playsinline',''); a.loop = true; a.volume = .01;
+        a.src = this._silentWav(); document.body.appendChild(a); this.silentEl = a;
+        // 生命周期: 隐藏/离开页面显式暂停; 回到可见尝试恢复(被拒则等下一次手势内 unlock)
+        document.addEventListener('visibilitychange', () => {
+          if(!this.silentEl) return;
+          if(document.hidden){ try{ this.silentEl.pause(); }catch(e){} }
+          else { try{ const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+        });
+        window.addEventListener('pagehide', () => { try{ this.silentEl && this.silentEl.pause(); }catch(e){} });
+      }
+      const p = this.silentEl.play(); if(p && p.catch) p.catch(() => {});
+    }catch(e){}
+  },
+  stopKeepAlive(){ try{ if(this.silentEl){ this.silentEl.pause(); this.silentEl.remove(); this.silentEl = null; } 
+}catch(e){} },
+  _silentWav(){
+    const sr = 8000, n = 4000, size = 44 + n, b = new Uint8Array(size), dv = new DataView(b.buffer);
+    const ws = (o, s) => { for(let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
+    ws(0,'RIFF'); dv.setUint32(4, 36 + n, true); ws(8,'WAVE'); ws(12,'fmt ');
+    dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+    dv.setUint32(24,sr,true); dv.setUint32(28,sr,true); dv.setUint16(32,1,true); dv.setUint16(34,8,true);
+    ws(36,'data'); dv.setUint32(40,n,true); b.fill(128,44);
+    let s = ''; for(let i = 0; i < size; i++) s += String.fromCharCode(b[i]);
+    return 'data:audio/wav;base64,' + btoa(s);
+  },
+  tone(f0, f1, dur, type, vol, when){
+    try{
+      if(!this.ctx) return;
+      const t = this.ctx.currentTime + (when || 0);
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t);
+      if(f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || .3, t + .015);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + .06);
+    }catch(e){}
+  },
+  pop(){ this.ensure(); this.tone(520, 900, .09, 'triangle', .45) },
+  ding(){ this.ensure(); this.tone(880,0,.12,'sine',.32); this.tone(1174.7,0,.14,'sine',.28,.07); 
+this.tone(1568,0,.24,'sine',.28,.14) },
+  chomp(){ this.ensure(); this.tone(230,90,.09,'square',.32); this.tone(150,70,.11,'square',.26,.06) },
+  soft(){ this.ensure(); this.tone(392,330,.28,'sine',.2) },
+  yay(){ this.ensure(); [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>this.tone(f,0,.16,'triangle',.28,i*.085)) 
+},
+  woosh(){ this.ensure(); this.tone(1300,320,.24,'sawtooth',.1) },
+  fly(){ this.ensure(); this.tone(500,1500,.4,'sine',.22) }
+};
+" to type "System.Int64". Error: "Input string was not in a correct format."
+At line:2 char:841
++ ...  $x[2]; $out += [PSCustomObject]@{Section=$x[0]; OldHash=H $o; NewHas ...
++                                                                ~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-History], ParameterBindingException
+    + FullyQualifiedErrorId : CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.GetHistoryCommand
+ 
+Get-History : Cannot bind parameter 'Id'. Cannot convert value "/* ============ 3. Store（持久化，schema v1） ============ */
+const Store = {
+  key:'kidmath_v1',
+  data:null,
+  defaults(){
+    const sk = () => ({lvl:1, up:0, down:0, wins:0, tries:0});
+    return {v:1, stars:0, diff:'auto', voiceURI:null, rot:{}, irot:{}, seen:{}, calm:false, keepAlive:true,
+      skills:{count:sk(), numeral:sk(), produce:sk(), flash:sk(), compare:sk(), compose:sk(), add:sk()}};
+  },
+  load(){
+    let d = null;
+    try{ d = JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ d = null; }
+    const base = this.defaults();
+    if(d && d.v === 1 && d.skills){
+      // 技能字段逐项数值域校验（P2-02）: lvl∈[1,3]整数, 计数字段为非负整数
+      const nint = (v, lo, hi, dflt) => (Number.isInteger(v) && v >= lo && v <= hi) ? v : dflt;
+      for(const k in base.skills){
+        const s = d.skills[k] || {};
+        base.skills[k] = { lvl: nint(s.lvl, 1, 3, 1), up: nint(s.up, 0, 99, 0),
+          down: nint(s.down, 0, 99, 0), wins: nint(s.wins, 0, 1e6, 0), tries: nint(s.tries, 0, 1e6, 0) };
+      }
+      base.stars = nint(d.stars, 0, 1e9, 0);
+      base.diff = ['auto','1','2','3'].includes(d.diff) ? d.diff : 'auto';
+      base.voiceURI = (typeof d.voiceURI === 'string') ? d.voiceURI : null;
+      // 结构校验（P2-02）: rot/irot 仅接受数值表, seen 仅接受布尔真值表
+      const numMap = o => { const r = {};
+        if(o && typeof o === 'object' && !Array.isArray(o)) for(const k in o){ if(Number.isInteger(o[k]) && o[k] >= 0 
+&& o[k] < 1e6) r[k] = o[k]; }
+        return r; };
+      base.rot = numMap(d.rot); base.irot = numMap(d.irot);
+      const seen = {};
+      if(d.seen && typeof d.seen === 'object' && !Array.isArray(d.seen)) for(const k in d.seen){ if(d.seen[k] === 
+true) seen[k] = true; }
+      base.seen = seen;
+      base.calm = d.calm === true;
+      base.keepAlive = d.keepAlive !== false;
+    }
+    this.data = base;
+  },
+  save(){ try{ localStorage.setItem(this.key, JSON.stringify(this.data)); }catch(e){/* 私密模式/满容量: 内存态继续 */} },
+  reset(){ this.data = this.defaults(); this.save(); }
+};
+" to type "System.Int64". Error: "Input string was not in a correct format."
+At line:2 char:841
++ ...  $x[2]; $out += [PSCustomObject]@{Section=$x[0]; OldHash=H $o; NewHas ...
++                                                                ~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-History], ParameterBindingException
+    + FullyQualifiedErrorId : CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.GetHistoryCommand
+ 
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); function GitText($rev){ (git show "$rev`:index.html") -join "`n" }; function SectionText($txt,$a,$b){ $s=$txt.IndexOf($a); $e=$txt.IndexOf($b,$s); if($s -lt 0 -or $e -lt 0){ return '"'' }; "'$txt.Substring($s,$e-$s) }; function HashText($s){ $sha=[Security.Cryptography.SHA256]::Create(); ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($s)))).Replace('"'-','').Substring(0,16) }; "'$old=GitText '"'d23ba23'; "'$new=GitText '"'HEAD'; "'$sections=@(@('"'Speech','/* ============ 4. Speech','/* ============ 5. Sfx'),@('Sfx','/* ============ 5. Sfx','/* ============ 6.'),@('Store','/* ============ 3. Store','/* ============ 4. Speech')); "'$out=@(); foreach($x in $sections){ $o=SectionText $old $x[1] $x[2]; $n=SectionText $new $x[1] $x[2]; $out += [PSCustomObject]@{Section=$x[0]; OldHash=HashText $o; NewHash=HashText $n; Same=($o -ceq $n); OldChars=$o.Length; NewChars=$n.Length} }; $out | Format-Table -AutoSize' in D:\ClaudeCode\kidmath
+ succeeded in 908ms:
+
+Section OldHash          NewHash           Same OldChars NewChars
+------- -------          -------           ---- -------- --------
+Speech  FDB0599730136A16 FDB0599730136A16  True     9992     9992
+Sfx     5835CD18F322C88A 5835CD18F322C88A  True     4137     4137
+Store   2B7FCD879AE3CA55 F69E0CFACB6FCE0F False     1991     1921
+
+
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $patterns=@('"'independents','TRAITS','\\.cls','classList\\.add\\(''spin''|classList\\.add\\(''wob''|classList\\.add\\(''bob''','ctx\\.nudge','App\\.setInstruction','setInterval','setTimeout','firstTry','assisted'); foreach("'$p in $patterns){ "--- $p ---"; Select-String -LiteralPath index.html -Pattern $p -Encoding utf8 | ForEach-Object { '"'{0}: {1}' -f "'$_.LineNumber,$_.Line.Trim() } }' in D:\ClaudeCode\kidmath
+ succeeded in 544ms:
+--- independents ---
+2438: let independents = 0;
+2443: if(res.firstTry && !res.assisted) independents++;
+--- TRAITS ---
+1014: const TRAITS = {
+1030: function traitLine(charId){ return (TRAITS[charId] && TRAITS[charId].win) || pick(PRAISES); }
+--- \.cls ---
+--- classList\.add\('spin'|classList\.add\('wob'|classList\.add\('bob' ---
+--- ctx\.nudge ---
+1059: ctx.nudge(intro, () => (got >= n && btnDone) ? btnDone : tree.querySelector('.peach-on-tree:not(.dim)'));
+1139: ctx.nudge(intro, () => (cur >= tgt() && btnDone) ? btnDone : tree.querySelector('.peach-on-tree:not(.dim)'));
+1202: ctx.nudge(intro, () => stage.querySelector('.countable:not(.counted)') || stage.querySelector('.cards'));
+1241: ctx.nudge(q, () => stage.querySelector('.cards'));
+1272: ctx.nudge(intro, () => row.querySelector(`[data-pos="${target}"]`));
+1321: ctx.nudge(intro, () => wl.querySelector(`[data-pos="${expect}"]`));
+1393: ctx.nudge(q, () => stage.querySelector('.cards'));
+1434: ctx.nudge(q, () => row.querySelector(`[data-pos="${sa}"]`));
+1496: ctx.nudge(intro, () => balls.find(x => +x.dataset.value === need && !x.classList.contains('dim')));
+1543: ctx.nudge(intro, () => pile.querySelector('.item:not(.dim)') || stage.querySelector('.icards'));
+1571: ctx.nudge(q, () => stage.querySelector('.icards'));
+1619: ctx.nudge(q, () => stage.querySelector('.cards'));
+1673: ctx.nudge(intro, () => pile.querySelector('.item:not(.dim)') || stage.querySelector('.cards'));
+1696: ctx.nudge(q, () => stage.querySelector('.cards'));
+1729: ctx.nudge(q1, () => stage.querySelector('.cards'));
+1762: ctx.nudge(intro, () => stage.querySelector('.dicebtn'));
+1783: ctx.nudge(q, () => stage.querySelector('.cards'));
+1813: ctx.nudge(q, () => stage.querySelector('.icards'));
+1866: ctx.nudge(q, () => stage.querySelector('.cards'));
+1912: ctx.nudge(intro, () => pile.querySelector('.item:not(.dim)') || stage.querySelector('.cards'));
+1934: ctx.nudge(q, () => stage.querySelector('.cards'));
+1982: ctx.nudge(intro, () => pile.querySelector('.item:not(.dim)') || stage.querySelector('.cards'));
+2030: ctx.nudge(q, () => stage.querySelector('.cards'));
+2069: ctx.nudge(q, () => stage.querySelector('.cards'));
+2116: ctx.nudge(line, () => stage.querySelector('.cards'));
+--- App\.setInstruction ---
+920: App.setInstruction(cfg.reask);
+978: App.setInstruction(cfg.reask);
+1058: App.setInstruction(intro); sayAs(host, intro);
+1138: App.setInstruction(intro); Speech.say(intro);
+1155: App.setInstruction(line2); ctx.touch();
+1201: App.setInstruction(intro); sayAs(host, intro);
+1240: App.setInstruction(q); await sayAs(host, q);
+1271: App.setInstruction(intro); Speech.say(intro);
+1320: App.setInstruction(intro); Speech.say(intro);
+1345: App.setInstruction(`第${NUM_CN[expect]}个是谁？点一点他！`);
+1392: App.setInstruction(q); await Speech.say(q);
+1433: App.setInstruction(q); await Speech.say(q);
+1495: App.setInstruction(intro); sayAs(host, intro);
+1542: App.setInstruction(intro); Speech.say(intro);
+1570: App.setInstruction(q); await Speech.say(q);
+1618: App.setInstruction(q); Speech.say(q);
+1672: App.setInstruction(intro); Speech.say(intro);
+1695: App.setInstruction(q); await Speech.say(q);
+1728: App.setInstruction(q1); await Speech.say(q1);
+1750: App.setInstruction(q2); await Speech.say(q2);
+1761: App.setInstruction(intro); Speech.say(intro);
+1782: App.setInstruction(q); Speech.say(q);
+1812: App.setInstruction(q); await Speech.say(q);
+1836: App.setInstruction(q2); await Speech.say(q2);
+1865: App.setInstruction(q); Speech.say(q);
+1911: App.setInstruction(intro); Speech.say(intro);
+1933: App.setInstruction(q); await Speech.say(q);
+1981: App.setInstruction(intro); sayAs(host, intro);
+2029: App.setInstruction(q); await sayAs(host, q);
+2068: App.setInstruction(q); Speech.say(q);
+2115: App.setInstruction(line); sayAs(host, line);
+--- setInterval ---
+998: const iv = setInterval(() => {
+2243: const iv = setInterval(() => {
+--- setTimeout ---
+362: const wait = ms => new Promise(r => setTimeout(r, T(ms)));
+458: setTimeout(() => {
+492: setTimeout(() => { if(!this.everWorked) UI.showNoSound(); }, 3500);
+515: this._cancelT = setTimeout(() => {      // 军规2: cancel 后 ≥150ms
+563: setTimeout(finish, tmo);
+566: [250, 450].forEach(d => setTimeout(() => {
+570: setTimeout(() => {
+581: setTimeout(() => { this._release(u2); }, tmo);
+620: else setTimeout(chk, 120);
+644: setTimeout(fin, this.everWorked ? 1600 : 500);
+660: this._cancelT = setTimeout(() => {
+772: clearTimeout(this._tt); this._tt = setTimeout(() => { t.style.display = 'none'; }, ms || 2600);
+774: bump(elm){ elm.style.scale = '.88'; setTimeout(() => { elm.style.scale = ''; }, 130); },
+782: setTimeout(() => c.remove(), T(4500));
+795: setTimeout(() => f.remove(), T(650));
+937: setTimeout(() => f.remove(), T(560));
+1349: btn.style.scale = '.88'; setTimeout(() => { btn.style.scale = ''; }, 140);
+1514: b.style.scale = '.88'; setTimeout(() => { b.style.scale = ''; }, 140);
+2065: setTimeout(() => place(K), 60);
+2169: bump(){ box.style.scale = '1.06'; setTimeout(() => { box.style.scale = ''; }, 140); }
+2205: if(animate) place(); else setTimeout(place, 60);
+2225: after(ms, fn){ const id = setTimeout(() => { this.timers.delete(id); if(this.alive()) fn(); }, T(ms)); this.timers.add(id); return id; }
+2234: setTimeout(() => { if(self.alive()) Ghost.run(self, anchors.filter(Boolean)); }, T(1400));
+2295: setTimeout(() => b.classList.remove('armed'), 2600);
+2316: setTimeout(() => { if(!Speech.everWorked) UI.showNoSound(); }, 3500);
+2342: setTimeout(() => { this.transitioning = false; this.openIsland(w); }, T(700));
+2408: setTimeout(() => { this.transitioning = false; this.playLevel(world, i); }, T(900));
+2503: setTimeout(done, T(5200));
+2521: t = setTimeout(() => { t = null; this.open(); }, 3000);   // 长按 3s 防孩子误入
+--- firstTry ---
+887: /* 数字牌问答: resolve {firstTry}
+891: let firstTry = true, wrongs = 0, lock = false;
+906: resolve({firstTry});
+908: firstTry = false; wrongs++; Sfx.soft(); c.classList.add('dim');
+950: let firstTry = true, wrongs = 0, lock = false;
+966: bar.remove(); resolve({firstTry});
+968: firstTry = false; wrongs++; Sfx.soft(); c.classList.add('dim');
+1072: finish({firstTry: attempts === 1});
+1107: return {firstTry: out.firstTry};
+1126: let phase = 0, cur = 0, resolved = false, uiBusy = false, attempts = 0, firstTryAll = true, btnDone = null, finish;
+1159: finish({firstTry: firstTryAll});
+1163: firstTryAll = false; Sfx.soft();
+1184: return {firstTry: out.firstTry};
+1243: const {firstTry} = await askNumber(stage, ctx, {
+1248: return {firstTry};
+1274: let firstTry = true;
+1286: firstTry = false; Sfx.soft();
+1292: return {firstTry};
+1317: let expect = 1, firstTry = true;
+1348: firstTry = false; Sfx.soft();
+1355: return {firstTry};
+1376: let firstTry = true;
+1413: firstTry = res.firstTry;
+1455: firstTry = false; Sfx.soft();
+1462: return {firstTry};
+1498: let firstTry = true;
+1513: firstTry = false; Sfx.soft();
+1520: return {firstTry};
+1572: const {firstTry} = await askIcons(stage, ctx, {
+1594: return {firstTry};
+1620: const {firstTry} = await askNumber(stage, ctx, {
+1649: return {firstTry};
+1697: const {firstTry} = await askNumber(stage, ctx, {
+1712: return {firstTry};
+1736: ctx._ft = ctx._ft && r1.firstTry;
+1758: ctx._done({firstTry: r1.firstTry && r2.firstTry});
+1775: let firstTry = true;
+1796: firstTry = r1.firstTry;
+1831: firstTry = r1.firstTry;
+1848: firstTry = firstTry && r2.firstTry;
+1854: return {firstTry};
+1867: const {firstTry} = await askNumber(stage, ctx, {
+1883: return {firstTry};
+1935: const {firstTry} = await askNumber(stage, ctx, {
+1959: return {firstTry};
+2031: const {firstTry} = await askNumber(stage, ctx, {
+2045: return {firstTry};
+2070: const {firstTry} = await askNumber(stage, ctx, {
+2095: return {firstTry};
+2118: const {firstTry} = await askNumber(stage, ctx, {
+2145: return {firstTry};
+2443: if(res.firstTry && !res.assisted) independents++;
+--- assisted ---
+1088: if(attempts >= 2){ ctx.assisted = true; await Ghost.run(ctx, peaches.slice(0, n)); }
+1102: if(ctx.assisted && !ctx._doneIntro){ ctx._doneIntro = true; ctx.after(500, () => Ghost.run(ctx, [btnDone])); }
+1168: if(attempts >= 2){ ctx.assisted = true; await Ghost.run(ctx, peaches.filter(p => !p.classList.contains('dim')).slice(0, tgt())); }
+2220: this.assisted = false;      // 任何幽灵手介入(首遇示范/空闲指点) → 本回合只能计 hinted（P0-02）
+2232: this.assisted = true;       // 首遇示范回合不计独立掌握
+2238: // 语音逐字重播＝无障碍重复(不含解信息, 不降级 outcome); 幽灵手指点＝脚手架(置 assisted)。见 DESIGN §9.1。
+2252: if(a && a.isConnected){ this.assisted = true; Ghost.run(this, [a]); }
+2443: if(res.firstTry && !res.assisted) independents++;
+2477: if(out && !out.aborted) out.assisted = ctx.assisted;
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+from playwright.sync_api import sync_playwright
+from pathlib import Path
+import time, json
+url = Path(r'D:\\ClaudeCode\\kidmath\\index.html').as_uri() + '?fast=1&demo=0'
+mock = r'''(function(){const S={speaking:false,pending:false,_q:[],onvoiceschanged:null,getVoices(){return [{name:'Mock',lang:'zh-CN',voiceURI:'m',localService:true,default:true}]},resume(){},cancel(){this._q.forEach(u=>u._c=true);this._q=[];this.speaking=false;this.pending=false},speak(u){u._c=false;this._q.push(u);this.speaking=true;setTimeout(()=>{if(u._c)return;u.onstart&&u.onstart({});setTimeout(()=>{if(u._c)return;this._q=this._q.filter(x=>x"'!==u);this.speaking=this._q.length>0;this.pending=this._q.length>1;u.onend&&u.onend({})},18)},8)}};Object.defineProperty(window,'"'speechSynthesis',{value:S,configurable:true});window.SpeechSynthesisUtterance=function(t){this.text=t||''};addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none"'!important;transition-duration:.01s!important}'"';document.head.appendChild(s)})})()'''
+def boot(page):
+    page.goto(url, wait_until='load')
+    page.locator('#btnStart').click()
+    page.wait_for_function(\"document.body.dataset.scene==='sceneMap'\")
+    page.evaluate(\"for(const k in __KM.Store.data.islands)__KM.Store.data.islands[k].unlocked=3\")
+def enter(page, idx, li):
+    page.locator('.island').nth(idx).click()
+    page.wait_for_function(\"document.body.dataset.scene==='sceneLevels'\")
+    page.locator(f\".lvbtn[data-level='{li}']\").click()
+    page.wait_for_function(\"document.body.dataset.scene==='scenePlay' && document.querySelector('#stage').dataset.activity\")
+with sync_playwright() as pw:
+    b=pw.chromium.launch()
+    p=b.new_page(viewport={'width':1180,'height':820})
+    p.add_init_script(mock)
+    boot(p); enter(p,0,1)
+    # title / dots collision
+    overlap=p.evaluate(\"\"\"()=>{const a=document.querySelector('.gametitle').getBoundingClientRect(),b=document.querySelector('#dots').getBoundingClientRect();return {title:[a.left,a.top,a.right,a.bottom],dots:[b.left,b.top,b.right,b.bottom],overlap:Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))}}\"\"\")
+    n=int(p.locator('#stage').get_attribute('data-answer'))
+    for _ in range(n):
+        p.locator('.peach-on-tree:not(.dim)').first.click(); p.wait_for_timeout(80)
+    p.locator('#btnDone').click()
+    p.wait_for_function(\"document.querySelector('#stage').dataset.phase==='fill1'\")
+    stale=p.evaluate(\"()=>({shown:__KM.App.lastInstruction.text,nudge:__KM.App.currentCtx._nudgeText,answer:document.querySelector('#stage').dataset.answer})\")
+    print('TITLE',json.dumps(overlap,ensure_ascii=False))
+    print('XIYOU_L2_PHASE2',json.dumps(stale,ensure_ascii=False))
+    # fresh page: paw L3 answer leakage after dealing
+    p.close(); p=b.new_page(viewport={'width':1180,'height':820}); p.add_init_script(mock)
+    boot(p); enter(p,3,2)
+    while p.locator('.bonepile .item:not(.dim)').count():
+        p.locator('.bonepile .item:not(.dim)').first.click(); p.wait_for_timeout(80)
+    p.wait_for_selector('.cards .ncard')
+    leak=p.evaluate(\"()=>({answer:document.querySelector('#stage').dataset.answer,badges:[...document.querySelectorAll('.bcnt')].map(x=>x.textContent),boneImgs:[...document.querySelectorAll('.bowlwrap')].map(x=>x.querySelectorAll('img.inbone').length)})\")
+    print('PAW_L3_AFTER_DEAL',json.dumps(leak,ensure_ascii=False))
+    b.close()
+'@ | python -" in D:\ClaudeCode\kidmath
+2026-08-09T02:12:04.915686Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.7 seconds
+Output:
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 77, in __enter__
+    dispatcher_fiber.switch()
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 56, in greenlet_main
+    self._loop.run_until_complete(self._connection.run_as_sync())
+  File "C:\Python310\lib\asyncio\base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 303, in run_as_sync
+    await self.run()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 312, in run
+    await self._transport.connect()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 133, in connect
+    raise exc
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 120, in connect
+    self._proc = await asyncio.create_subprocess_exec(
+  File "C:\Python310\lib\asyncio\subprocess.py", line 218, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+  File "C:\Python310\lib\asyncio\base_events.py", line 1681, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+  File "C:\Python310\lib\asyncio\windows_events.py", line 399, in _make_subprocess_transport
+    transp = _WindowsSubprocessTransport(self, protocol, args, shell,
+  File "C:\Python310\lib\asyncio\base_subprocess.py", line 36, in __init__
+    self._start(args=args, shell=shell, stdin=stdin, stdout=stdout,
+  File "C:\Python310\lib\asyncio\windows_events.py", line 901, in _start
+    self._proc = windows_utils.Popen(
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 136, in __init__
+    stdin_rh, stdin_wh = pipe(overlapped=(False, True), duplex=True)
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 34, in pipe
+    address = tempfile.mktemp(
+  File "C:\Python310\lib\tempfile.py", line 403, in mktemp
+    dir = gettempdir()
+  File "C:\Python310\lib\tempfile.py", line 299, in gettempdir
+    return _os.fsdecode(_gettempdir())
+  File "C:\Python310\lib\tempfile.py", line 292, in _gettempdir
+    tempdir = _get_default_tempdir()
+  File "C:\Python310\lib\tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\WINDOWS\\Temp', 'c:\\temp', 'c:\\tmp', '\\temp', '\\tmp', 'D:\\ClaudeCode\\kidmath']
+Future exception was never retrieved
+future: <Future finished exception=FileNotFoundError(2, "No usable temporary directory found in ['C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\WINDOWS\\\\Temp', 'c:\\\\temp', 'c:\\\\tmp', '\\\\temp', '\\\\tmp', 'D:\\\\ClaudeCode\\\\kidmath']")>
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 77, in __enter__
+    dispatcher_fiber.switch()
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 56, in greenlet_main
+    self._loop.run_until_complete(self._connection.run_as_sync())
+  File "C:\Python310\lib\asyncio\base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 303, in run_as_sync
+    await self.run()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 312, in run
+    await self._transport.connect()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 133, in connect
+    raise exc
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 120, in connect
+    self._proc = await asyncio.create_subprocess_exec(
+  File "C:\Python310\lib\asyncio\subprocess.py", line 218, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+  File "C:\Python310\lib\asyncio\base_events.py", line 1681, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+  File "C:\Python310\lib\asyncio\windows_events.py", line 399, in _make_subprocess_transport
+    transp = _WindowsSubprocessTransport(self, protocol, args, shell,
+  File "C:\Python310\lib\asyncio\base_subprocess.py", line 36, in __init__
+    self._start(args=args, shell=shell, stdin=stdin, stdout=stdout,
+  File "C:\Python310\lib\asyncio\windows_events.py", line 901, in _start
+    self._proc = windows_utils.Popen(
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 136, in __init__
+    stdin_rh, stdin_wh = pipe(overlapped=(False, True), duplex=True)
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 34, in pipe
+    address = tempfile.mktemp(
+  File "C:\Python310\lib\tempfile.py", line 403, in mktemp
+    dir = gettempdir()
+  File "C:\Python310\lib\tempfile.py", line 299, in gettempdir
+    return _os.fsdecode(_gettempdir())
+  File "C:\Python310\lib\tempfile.py", line 292, in _gettempdir
+    tempdir = _get_default_tempdir()
+  File "C:\Python310\lib\tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\WINDOWS\\Temp', 'c:\\temp', 'c:\\tmp', '\\temp', '\\tmp', 'D:\\ClaudeCode\\kidmath']
+
+ exited 1 in 730ms:
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 77, in __enter__
+    dispatcher_fiber.switch()
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 56, in greenlet_main
+    self._loop.run_until_complete(self._connection.run_as_sync())
+  File "C:\Python310\lib\asyncio\base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 303, in run_as_sync
+    await self.run()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 312, in run
+    await self._transport.connect()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 133, in connect
+    raise exc
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 120, in connect
+    self._proc = await asyncio.create_subprocess_exec(
+  File "C:\Python310\lib\asyncio\subprocess.py", line 218, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+  File "C:\Python310\lib\asyncio\base_events.py", line 1681, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+  File "C:\Python310\lib\asyncio\windows_events.py", line 399, in _make_subprocess_transport
+    transp = _WindowsSubprocessTransport(self, protocol, args, shell,
+  File "C:\Python310\lib\asyncio\base_subprocess.py", line 36, in __init__
+    self._start(args=args, shell=shell, stdin=stdin, stdout=stdout,
+  File "C:\Python310\lib\asyncio\windows_events.py", line 901, in _start
+    self._proc = windows_utils.Popen(
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 136, in __init__
+    stdin_rh, stdin_wh = pipe(overlapped=(False, True), duplex=True)
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 34, in pipe
+    address = tempfile.mktemp(
+  File "C:\Python310\lib\tempfile.py", line 403, in mktemp
+    dir = gettempdir()
+  File "C:\Python310\lib\tempfile.py", line 299, in gettempdir
+    return _os.fsdecode(_gettempdir())
+  File "C:\Python310\lib\tempfile.py", line 292, in _gettempdir
+    tempdir = _get_default_tempdir()
+  File "C:\Python310\lib\tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\WINDOWS\\Temp', 'c:\\temp', 'c:\\tmp', '\\temp', '\\tmp', 'D:\\ClaudeCode\\kidmath']
+Future exception was never retrieved
+future: <Future finished exception=FileNotFoundError(2, "No usable temporary directory found in ['C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\Users\\\\edliu\\\\AppData\\\\Local\\\\Temp', 'C:\\\\WINDOWS\\\\Temp', 'c:\\\\temp', 'c:\\\\tmp', '\\\\temp', '\\\\tmp', 'D:\\\\ClaudeCode\\\\kidmath']")>
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 77, in __enter__
+    dispatcher_fiber.switch()
+  File "C:\Python310\lib\site-packages\playwright\sync_api\_context_manager.py", line 56, in greenlet_main
+    self._loop.run_until_complete(self._connection.run_as_sync())
+  File "C:\Python310\lib\asyncio\base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 303, in run_as_sync
+    await self.run()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_connection.py", line 312, in run
+    await self._transport.connect()
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 133, in connect
+    raise exc
+  File "C:\Python310\lib\site-packages\playwright\_impl\_transport.py", line 120, in connect
+    self._proc = await asyncio.create_subprocess_exec(
+  File "C:\Python310\lib\asyncio\subprocess.py", line 218, in create_subprocess_exec
+    transport, protocol = await loop.subprocess_exec(
+  File "C:\Python310\lib\asyncio\base_events.py", line 1681, in subprocess_exec
+    transport = await self._make_subprocess_transport(
+  File "C:\Python310\lib\asyncio\windows_events.py", line 399, in _make_subprocess_transport
+    transp = _WindowsSubprocessTransport(self, protocol, args, shell,
+  File "C:\Python310\lib\asyncio\base_subprocess.py", line 36, in __init__
+    self._start(args=args, shell=shell, stdin=stdin, stdout=stdout,
+  File "C:\Python310\lib\asyncio\windows_events.py", line 901, in _start
+    self._proc = windows_utils.Popen(
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 136, in __init__
+    stdin_rh, stdin_wh = pipe(overlapped=(False, True), duplex=True)
+  File "C:\Python310\lib\asyncio\windows_utils.py", line 34, in pipe
+    address = tempfile.mktemp(
+  File "C:\Python310\lib\tempfile.py", line 403, in mktemp
+    dir = gettempdir()
+  File "C:\Python310\lib\tempfile.py", line 299, in gettempdir
+    return _os.fsdecode(_gettempdir())
+  File "C:\Python310\lib\tempfile.py", line 292, in _gettempdir
+    tempdir = _get_default_tempdir()
+  File "C:\Python310\lib\tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\Users\\edliu\\AppData\\Local\\Temp', 'C:\\WINDOWS\\Temp', 'c:\\temp', 'c:\\tmp', '\\temp', '\\tmp', 'D:\\ClaudeCode\\kidmath']
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); Select-String -Path tools/manifest.py,tools/qa_assets.py -Pattern '"'tree.png|basket.png|web.png|puddle.png|bowl.png|ALLOW|allow' -Encoding utf8 | ForEach-Object { '{0}:{1}: {2}' -f "'$_.Path,$_.LineNumber,$_.Line.Trim() }; Add-Type -AssemblyName System.Drawing; foreach($f in @('"'assets/item/tree.png','assets/item/basket.png','assets/item/web.png','assets/item/puddle.png','assets/item/bowl.png')){ "'$im=[Drawing.Image]::FromFile((Resolve-Path $f)); [PSCustomObject]@{File=$f; Width=$im.Width; Height=$im.Height; PixelFormat=$im.PixelFormat; Bytes=(Get-Item $f).Length}; $im.Dispose() } | Format-Table -AutoSize' in D:\ClaudeCode\kidmath
+2026-08-09T02:12:18.888751Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.5 seconds
+Output:
+At line:2 char:644
++ ... m.PixelFormat; Bytes=(Get-Item $f).Length}; $im.Dispose() } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : EmptyPipeElement
+ 
+
+ exited 1 in 496ms:
+At line:2 char:644
++ ... m.PixelFormat; Bytes=(Get-Item $f).Length}; $im.Dispose() } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : EmptyPipeElement
+ 
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); Select-String -Path tools/manifest.py,tools/qa_assets.py -Pattern '"'tree.png|basket.png|web.png|puddle.png|bowl.png|ALLOW|allow' -Encoding utf8 | ForEach-Object { '{0}:{1}: {2}' -f "'$_.Path,$_.LineNumber,$_.Line.Trim() }; Add-Type -AssemblyName System.Drawing; $out=@(); foreach($f in @('"'assets/item/tree.png','assets/item/basket.png','assets/item/web.png','assets/item/puddle.png','assets/item/bowl.png')){ "'$im=[Drawing.Image]::FromFile((Resolve-Path $f)); $out += [PSCustomObject]@{File=$f; Width=$im.Width; Height=$im.Height; PixelFormat=$im.PixelFormat; Bytes=(Get-Item $f).Length}; $im.Dispose() }; $out | Format-Table -AutoSize' in D:\ClaudeCode\kidmath
+ succeeded in 560ms:
+D:\ClaudeCode\kidmath\tools\qa_assets.py:3: edge-ring halo sampling) + reviewed-allowlist (keyed by content hash, so any
+D:\ClaudeCode\kidmath\tools\qa_assets.py:13: # 人工复核 allowlist: (文件, sha1前12位) -> 结论。素材重生成 → hash 变 → 需重新目检。
+D:\ClaudeCode\kidmath\tools\qa_assets.py:117: print(f"({len(reviewed)} reviewed-allowlist entries)")
+
+File                   Width Height     PixelFormat Bytes
+----                   ----- ------     ----------- -----
+assets/item/tree.png     512    512 Format32bppArgb 42117
+assets/item/basket.png   512    512 Format32bppArgb 51666
+assets/item/web.png      512    512 Format32bppArgb 62786
+assets/item/puddle.png   512    512 Format32bppArgb 16760
+assets/item/bowl.png     512    512 Format32bppArgb 13926
+
+
+
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $l=Get-Content -LiteralPath tools/qa_assets.py -Encoding utf8; for($n=1;$n -le 40;$n++){ '"'{0}: {1}' -f "'$n,$l[$n-1] }; for($n=100;$n -le [Math]::Min(125,$l.Count);$n++){ '"'{0}: {1}' -f "'$n,$l[$n-1] }' in D:\ClaudeCode\kidmath
+ succeeded in 496ms:
+1: # -*- coding: utf-8 -*-
+2: """Asset QA: automated checks (size / corner alpha / bbox coverage 22%-97% /
+3: edge-ring halo sampling) + reviewed-allowlist (keyed by content hash, so any
+4: regeneration invalidates the human sign-off) + contact sheets."""
+5: import os, sys, json, hashlib
+6: from PIL import Image
+7: 
+8: sys.path.insert(0, os.path.dirname(__file__))
+9: from manifest import build
+10: 
+11: ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+12: 
+13: # 人工复核 allowlist: (文件, sha1前12位) -> 结论。素材重生成 → hash 变 → 需重新目检。
+14: REVIEWED = {
+15:     ("assets/char/blackwidow.png", "43e03db41a17"): "2026-08-08 目检: 形象完整未裁切, 底边为阴影像素, touches-edge 为误报",
+16:     ("assets/char/wujing.png", "ad7daffccd90"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+17:     ("assets/char/tangseng.png", "f261bc49c1c2"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+18:     ("assets/char/hulu1.png", "9773dcb78a24"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+19:     ("assets/char/hulu2.png", "d07014b5f311"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+20:     ("assets/char/hulu4.png", "948e14b677ab"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+21:     ("assets/char/hulu6.png", "b1a698377e74"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+22:     ("assets/char/hulu7.png", "3320b77355b7"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+23:     ("assets/char/yeye.png", "769ac6679723"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+24:     ("assets/char/gwen.png", "28e4219ab86a"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+25:     ("assets/char/ryder.png", "adfa46f6fd7f"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+26:     ("assets/char/chilli.png", "c815a6df113c"): "2026-08-08 目检: 贴纸风白描边(风格特征), 非抠图脏边",
+27: }
+28: 
+29: def sha12(path):
+30:     h = hashlib.sha1()
+31:     with open(path, "rb") as f:
+32:         h.update(f.read())
+33:     return h.hexdigest()[:12]
+34: 
+35: def qa(asset):
+36:     """自动检查: 尺寸 / 四角alpha / 主体bbox占比(22%-97%, 与DESIGN §9.5一致) /
+37:     贴边裁切 / 边缘halo(半透明亮色描边采样)。"""
+38:     rel = asset["file"]; p = os.path.join(ROOT, rel)
+39:     issues = []
+40:     if not os.path.exists(p):
+100: 
+101: def main():
+102:     manifest = build()
+103:     bad, adv, reviewed = {}, {}, {}
+104:     for a in manifest:
+105:         iss = qa(a)
+106:         p = os.path.join(ROOT, a["file"])
+107:         key = (a["file"], sha12(p)) if os.path.exists(p) else None
+108:         if key and key in REVIEWED and iss:
+109:             reviewed[a["file"]] = REVIEWED[key]     # 人工已复核该内容版本 → 全部降为已审记录
+110:             continue
+111:         hard = [i for i in iss if not i.startswith("ADVISORY")]
+112:         soft = [i for i in iss if i.startswith("ADVISORY")]
+113:         if hard: bad[a["file"]] = hard
+114:         if soft: adv[a["file"]] = soft
+115:     print(json.dumps(bad, indent=1) if bad else "QA: all hard checks passed")
+116:     if reviewed:
+117:         print(f"({len(reviewed)} reviewed-allowlist entries)")
+118:     if adv:
+119:         print(f"({len(adv)} UNREVIEWED ADVISORY entries — gate FAILS until eyeballed & added to REVIEWED):")
+120:         for k, v in adv.items():
+121:             print("  ", k, v)
+122:     chars = [a["file"] for a in manifest if "/char/" in a["file"]]
+123:     items = [a["file"] for a in manifest if "/item/" in a["file"]]
+124:     isls  = [a["file"] for a in manifest if "/isl_" in a["file"]]
+125:     bgs   = [a["file"] for a in manifest if "/bg_" in a["file"]]
+
+codex
+结论：本轮应拒绝。v2 已摆脱 v1 换皮结构，关卡流、迁移、离线和底层语音引擎总体可靠；但仍有会教错、测量失真和同回合竞态的发布阻断项。结论不涉及 IP 或真机冒烟。
+
+## 阻断项
+
+1. 幽灵手与空闲提示会教错
+
+- 葫芦 L1 首轮目标是第三个娃，却固定示范第一个娃：[index.html:1254](/D:/ClaudeCode/kidmath/index.html:1254)、[index.html:1273](/D:/ClaudeCode/kidmath/index.html:1273)。
+- 花果 L2、葫芦 L2、Bluey L1/L2 进入第二阶段时只更新 `lastInstruction`，未更新 `ctx.nudge`。9 秒后会出现“手指指当前答案、语音仍问上一题”的冲突：[index.html:1139](/D:/ClaudeCode/kidmath/index.html:1139)、[index.html:1155](/D:/ClaudeCode/kidmath/index.html:1155)、[index.html:1321](/D:/ClaudeCode/kidmath/index.html:1321)、[index.html:1345](/D:/ClaudeCode/kidmath/index.html:1345)、[index.html:1729](/D:/ClaudeCode/kidmath/index.html:1729)、[index.html:1750](/D:/ClaudeCode/kidmath/index.html:1750)。
+- 英雄 L1/L2 的首遇幽灵手点击不可交互的能量条，而不是答案牌；L3 答错后让孩子“数空格”，但该关根本没有能量格：[index.html:2117](/D:/ClaudeCode/kidmath/index.html:2117)、[index.html:1513](/D:/ClaudeCode/kidmath/index.html:1513)。
+
+这直接违反“动态正确锚点、宁缺毋错”的既有军规。
+
+2. 冒险湾 L3 的独立测量无效
+
+分发结束后，每个碗旁直接显示数值徽章 `c.count`，该数值正是随后问题的正确答案；同时碗里没有持久显示多块骨头，只剩数字徽章。会认 1–10 的孩子只需抄读答案，无法测到平均分理解：[index.html:1683](/D:/ClaudeCode/kidmath/index.html:1683)、[index.html:1697](/D:/ClaudeCode/kidmath/index.html:1697)。
+
+3. 佩奇 L2“偷饼干”存在真实竞态
+
+放到第 4 块后异步启动偷吃，但期间仍允许继续投放；回调随后固定删除第二盒并执行 `placed--`。孩子点击较快时，盒内实物布局与 `placed` 游标会分叉。更严重的是，先前安排的“满数量完成”定时器不重新核验状态，可能在已有残缺配对时结束回合：[index.html:1984](/D:/ClaudeCode/kidmath/index.html:1984)、[index.html:2002](/D:/ClaudeCode/kidmath/index.html:2002)、[index.html:2022](/D:/ClaudeCode/kidmath/index.html:2022)。
+
+4. “角色个性化反应”尚未真正落地
+
+`TRAITS.cls` 从未被读取，也没有对应动画调用；表中也没有规格要求的 `onEnter/quirk`。现状主要是台词替换：[index.html:1014](/D:/ClaudeCode/kidmath/index.html:1014)、[index.html:1030](/D:/ClaudeCode/kidmath/index.html:1030)。
+
+此外：
+
+- 迈尔斯/格温主持时仍播放蜘蛛侠反应。
+- 美国队长、雷神、绿巨人主持时，结尾固定使用钢铁侠台词。
+- 悟空翻跟头、灰灰回收、狗狗摇尾、乔治哭及家人安慰等多数承诺动画没有实现。
+
+蛇精抓娃、Bandit 跳错和猪爸爸偷吃证明方向正确，但不足以满足甲方明确提出的角色反应要求。
+
+5. independent 契约只算不存
+
+`firstTry + assisted` 的回合分类大体正确，但 `independents` 只在局部变量中累加，过关后直接丢弃，Store 和家长面板均无记录：[index.html:2438](/D:/ClaudeCode/kidmath/index.html:2438)、[index.html:2443](/D:/ClaudeCode/kidmath/index.html:2443)。因此规格所称“内部记录 independent 比例”并未实现。
+
+## 六维结论
+
+| 维度 | 结论 |
+|---|---|
+| 幼儿数学教学法 | 六岛整体方向明显合格，花果减法、葫芦序数、英雄凑十、Bluey 数轴尤其成立；但 Paw L3 答案泄漏、英雄 L3 无效脚手架必须修复。 |
+| 3.5–4 岁可用性 | 大触点、单点输入、无失败惩罚均保留；葫芦换位缺少递进提示和持续选中标记，当前工作记忆负担过高。 |
+| 视觉品质 | 地图、背景与关键物体清晰，整体达到儿童产品水准；但所有关卡图中四个进度点都压在标题文字上，因为两者同为顶部居中且 `#dots` 层级更高：[index.html:61](/D:/ClaudeCode/kidmath/index.html:61)、[index.html:170](/D:/ClaudeCode/kidmath/index.html:170)。竖屏又存在大面积空场、交互集中在底部的问题。 |
+| 代码质量 | 解锁、v1 迁移、回合 token 主干正确；上述 stale nudge、偷吃竞态、死字段和未持久化测量构成阻断。Peppa L1 关卡页还写“摆杯子”，实际进入后是分苹果：[index.html:762](/D:/ClaudeCode/kidmath/index.html:762)、[index.html:1892](/D:/ClaudeCode/kidmath/index.html:1892)。 |
+| 性能 | 素材量和 SW 策略通过；但生产模式场景转换人为等待 700/900ms，超过文档 400ms 预算，而测试的 `fast=1` 掩盖了它。进入游戏也未卸载隐藏关卡页背景和角色。 |
+| iOS/WebKit | 与最后 APPROVE 提交 `d23ba23` 比较，Speech、Sfx 两个代码段逐字一致，底层军规没有被改坏；但新调用层有问题：骰子 `setInterval` 未登记到 `ActCtx`，退出后仍可继续滚动和发音：[index.html:998](/D:/ClaudeCode/kidmath/index.html:998)。从关卡页回地图也未统一 `Speech.stopAll()`。 |
+
+四回合“递进”也并非全面成立：例如英雄 L2 的缺数顺序是 4、7、2、5，佩奇 L3 是 6、4、3、1，冒险湾 L1 又回到“正好”。目前是参数变化，不是稳定的由易到难。
+
+`ALL GREEN` 可以证明 18 关主流程可走通，但没有覆盖上述语义问题：其他五岛先执行了 `unlock_all`，错误路径仅实际抽查花果 L1 和冒险湾 L1，也没有断言 independent 持久化、9 秒跨阶段提醒、偷吃后的盒内守恒或角色动画。[run_tests.py:422](/D:/ClaudeCode/kidmath/tests/run_tests.py:422)、[run_tests.py:436](/D:/ClaudeCode/kidmath/tests/run_tests.py:436)
+
+VERDICT: REJECT
+tokens used
+198,937
+结论：本轮应拒绝。v2 已摆脱 v1 换皮结构，关卡流、迁移、离线和底层语音引擎总体可靠；但仍有会教错、测量失真和同回合竞态的发布阻断项。结论不涉及 IP 或真机冒烟。
+
+## 阻断项
+
+1. 幽灵手与空闲提示会教错
+
+- 葫芦 L1 首轮目标是第三个娃，却固定示范第一个娃：[index.html:1254](/D:/ClaudeCode/kidmath/index.html:1254)、[index.html:1273](/D:/ClaudeCode/kidmath/index.html:1273)。
+- 花果 L2、葫芦 L2、Bluey L1/L2 进入第二阶段时只更新 `lastInstruction`，未更新 `ctx.nudge`。9 秒后会出现“手指指当前答案、语音仍问上一题”的冲突：[index.html:1139](/D:/ClaudeCode/kidmath/index.html:1139)、[index.html:1155](/D:/ClaudeCode/kidmath/index.html:1155)、[index.html:1321](/D:/ClaudeCode/kidmath/index.html:1321)、[index.html:1345](/D:/ClaudeCode/kidmath/index.html:1345)、[index.html:1729](/D:/ClaudeCode/kidmath/index.html:1729)、[index.html:1750](/D:/ClaudeCode/kidmath/index.html:1750)。
+- 英雄 L1/L2 的首遇幽灵手点击不可交互的能量条，而不是答案牌；L3 答错后让孩子“数空格”，但该关根本没有能量格：[index.html:2117](/D:/ClaudeCode/kidmath/index.html:2117)、[index.html:1513](/D:/ClaudeCode/kidmath/index.html:1513)。
+
+这直接违反“动态正确锚点、宁缺毋错”的既有军规。
+
+2. 冒险湾 L3 的独立测量无效
+
+分发结束后，每个碗旁直接显示数值徽章 `c.count`，该数值正是随后问题的正确答案；同时碗里没有持久显示多块骨头，只剩数字徽章。会认 1–10 的孩子只需抄读答案，无法测到平均分理解：[index.html:1683](/D:/ClaudeCode/kidmath/index.html:1683)、[index.html:1697](/D:/ClaudeCode/kidmath/index.html:1697)。
+
+3. 佩奇 L2“偷饼干”存在真实竞态
+
+放到第 4 块后异步启动偷吃，但期间仍允许继续投放；回调随后固定删除第二盒并执行 `placed--`。孩子点击较快时，盒内实物布局与 `placed` 游标会分叉。更严重的是，先前安排的“满数量完成”定时器不重新核验状态，可能在已有残缺配对时结束回合：[index.html:1984](/D:/ClaudeCode/kidmath/index.html:1984)、[index.html:2002](/D:/ClaudeCode/kidmath/index.html:2002)、[index.html:2022](/D:/ClaudeCode/kidmath/index.html:2022)。
+
+4. “角色个性化反应”尚未真正落地
+
+`TRAITS.cls` 从未被读取，也没有对应动画调用；表中也没有规格要求的 `onEnter/quirk`。现状主要是台词替换：[index.html:1014](/D:/ClaudeCode/kidmath/index.html:1014)、[index.html:1030](/D:/ClaudeCode/kidmath/index.html:1030)。
+
+此外：
+
+- 迈尔斯/格温主持时仍播放蜘蛛侠反应。
+- 美国队长、雷神、绿巨人主持时，结尾固定使用钢铁侠台词。
+- 悟空翻跟头、灰灰回收、狗狗摇尾、乔治哭及家人安慰等多数承诺动画没有实现。
+
+蛇精抓娃、Bandit 跳错和猪爸爸偷吃证明方向正确，但不足以满足甲方明确提出的角色反应要求。
+
+5. independent 契约只算不存
+
+`firstTry + assisted` 的回合分类大体正确，但 `independents` 只在局部变量中累加，过关后直接丢弃，Store 和家长面板均无记录：[index.html:2438](/D:/ClaudeCode/kidmath/index.html:2438)、[index.html:2443](/D:/ClaudeCode/kidmath/index.html:2443)。因此规格所称“内部记录 independent 比例”并未实现。
+
+## 六维结论
+
+| 维度 | 结论 |
+|---|---|
+| 幼儿数学教学法 | 六岛整体方向明显合格，花果减法、葫芦序数、英雄凑十、Bluey 数轴尤其成立；但 Paw L3 答案泄漏、英雄 L3 无效脚手架必须修复。 |
+| 3.5–4 岁可用性 | 大触点、单点输入、无失败惩罚均保留；葫芦换位缺少递进提示和持续选中标记，当前工作记忆负担过高。 |
+| 视觉品质 | 地图、背景与关键物体清晰，整体达到儿童产品水准；但所有关卡图中四个进度点都压在标题文字上，因为两者同为顶部居中且 `#dots` 层级更高：[index.html:61](/D:/ClaudeCode/kidmath/index.html:61)、[index.html:170](/D:/ClaudeCode/kidmath/index.html:170)。竖屏又存在大面积空场、交互集中在底部的问题。 |
+| 代码质量 | 解锁、v1 迁移、回合 token 主干正确；上述 stale nudge、偷吃竞态、死字段和未持久化测量构成阻断。Peppa L1 关卡页还写“摆杯子”，实际进入后是分苹果：[index.html:762](/D:/ClaudeCode/kidmath/index.html:762)、[index.html:1892](/D:/ClaudeCode/kidmath/index.html:1892)。 |
+| 性能 | 素材量和 SW 策略通过；但生产模式场景转换人为等待 700/900ms，超过文档 400ms 预算，而测试的 `fast=1` 掩盖了它。进入游戏也未卸载隐藏关卡页背景和角色。 |
+| iOS/WebKit | 与最后 APPROVE 提交 `d23ba23` 比较，Speech、Sfx 两个代码段逐字一致，底层军规没有被改坏；但新调用层有问题：骰子 `setInterval` 未登记到 `ActCtx`，退出后仍可继续滚动和发音：[index.html:998](/D:/ClaudeCode/kidmath/index.html:998)。从关卡页回地图也未统一 `Speech.stopAll()`。 |
+
+四回合“递进”也并非全面成立：例如英雄 L2 的缺数顺序是 4、7、2、5，佩奇 L3 是 6、4、3、1，冒险湾 L1 又回到“正好”。目前是参数变化，不是稳定的由易到难。
+
+`ALL GREEN` 可以证明 18 关主流程可走通，但没有覆盖上述语义问题：其他五岛先执行了 `unlock_all`，错误路径仅实际抽查花果 L1 和冒险湾 L1，也没有断言 independent 持久化、9 秒跨阶段提醒、偷吃后的盒内守恒或角色动画。[run_tests.py:422](/D:/ClaudeCode/kidmath/tests/run_tests.py:422)、[run_tests.py:436](/D:/ClaudeCode/kidmath/tests/run_tests.py:436)
+
+VERDICT: REJECT

@@ -58,7 +58,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 #btnLvBack{top:max(2vmin,env(safe-area-inset-top));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:88px;min-height:88px;border-radius:50%;background:rgba(255,255,255,.75);font-size:5vmin;box-shadow:0 .5vmin 1.5vmin rgba(90,60,0,.15);display:flex;align-items:center;justify-content:center;position:absolute;z-index:30}
 #btnReplay{bottom:max(2.4vmin,env(safe-area-inset-bottom));left:max(2.4vmin,env(safe-area-inset-left));width:11vmin;height:11vmin;min-width:88px;min-height:88px;border-radius:50%;background:rgba(255,255,255,.9);font-size:5.6vmin;box-shadow:0 .6vmin 2vmin rgba(90,60,0,.25);display:flex;align-items:center;justify-content:center;z-index:30;position:absolute}
 #btnReplay:active,#btnHome:active{transform:scale(.9)}
-#dots{top:max(2.6vmin,env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+#dots{top:calc(max(2.6vmin,env(safe-area-inset-top)) + 8.5vmin);left:50%;transform:translateX(-50%)}
 #dots i{display:block;width:2.6vmin;height:2.6vmin;min-width:14px;min-height:14px;border-radius:50%;background:rgba(255,255,255,.6);border:.4vmin solid rgba(255,255,255,.9)}
 #dots i.done{background:#ffc94d;border-color:#fff}
 #gearMap{position:absolute;bottom:max(1.6vmin,env(safe-area-inset-bottom));right:max(1.6vmin,env(safe-area-inset-right));width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.35);font-size:24px;z-index:30;display:flex;align-items:center;justify-content:center;opacity:.65}
@@ -285,6 +285,15 @@ body.calm .balloon,body.calm .boot-chars img,body.calm .island .ihost,body.calm 
 @keyframes confall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(115vh) rotate(720deg)}}
 @keyframes spinring{0%{clip-path:polygon(50% 50%,50% 0,50% 0,50% 0,50% 0)}25%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 0,100% 0)}50%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,100% 100%)}75%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,0 100%)}100%{clip-path:polygon(50% 50%,50% 0,100% 0,100% 100%,0 0)}}
 @keyframes flystar{to{transform:translate(var(--fx),var(--fy)) scale(.4);opacity:.9}}
+/* 角色特性动画（TRAITS.cls） */
+.tr-spin{animation:trspin .9s ease-in-out}
+@keyframes trspin{0%{transform:rotate(0) scale(1)}55%{transform:rotate(360deg) scale(1.12)}100%{transform:rotate(360deg) scale(1)}}
+.tr-wob{animation:trwob .8s ease-in-out}
+@keyframes trwob{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg) scale(1.06)}45%{transform:rotate(8deg) scale(1.1)}70%{transform:rotate(-5deg)}}
+.tr-bob{animation:trbob .8s ease-in-out}
+@keyframes trbob{0%,100%{transform:translateY(0)}30%{transform:translateY(-2.6vmin) scale(1.08)}60%{transform:translateY(0)}80%{transform:translateY(-1.2vmin)}}
+.tr-wag{animation:trwag .7s ease-in-out 2}
+@keyframes trwag{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
 @media (prefers-reduced-motion:reduce){.balloon,.boot-chars img,.island .ihost,#btnStart,.cele-chars img,.cele-star{animation:none!important}}
 </style>
 </head>
@@ -396,7 +405,7 @@ const Store = {
   key:'kidmath_v1',
   data:null,
   defaults(){
-    const isl = () => ({unlocked:1, stars:[0,0,0]});
+    const isl = () => ({unlocked:1, stars:[0,0,0], ind:[0,0,0]});
     return {v:2, stars:0, voiceURI:null, rot:{}, seen:{}, calm:false, keepAlive:true,
       islands:{xiyou:isl(), hulu:isl(), avengers:isl(), paw:isl(), bluey:isl(), peppa:isl()}};
   },
@@ -422,7 +431,8 @@ const Store = {
           const s = d.islands[k] || {};
           base.islands[k] = {
             unlocked: nint(s.unlocked, 1, 3, 1),
-            stars: (Array.isArray(s.stars) && s.stars.length === 3) ? s.stars.map(v => v === 1 ? 1 : 0) : [0,0,0]
+            stars: (Array.isArray(s.stars) && s.stars.length === 3) ? s.stars.map(v => v === 1 ? 1 : 0) : [0,0,0],
+            ind: (Array.isArray(s.ind) && s.ind.length === 3) ? s.ind.map(v => nint(v, 0, 4, 0)) : [0,0,0]
           };
         }
       }
@@ -759,7 +769,7 @@ const LEVEL_META = {
   avengers:[{n:'凑五出击', say:'凑五出击'}, {n:'凑十出击', say:'凑十出击'}, {n:'蛛网抓球', say:'蛛网抓球'}],
   paw:     [{n:'骨头够吗', say:'骨头够不够'}, {n:'还差几块', say:'还差几块'}, {n:'平均分骨头', say:'平均分骨头'}],
   bluey:   [{n:'掷骰跳格', say:'掷骰子跳格子'}, {n:'爸爸捣乱', say:'爸爸捣乱'}, {n:'还差几格', say:'还差几格'}],
-  peppa:   [{n:'野餐摆杯', say:'野餐摆杯子'}, {n:'两个一对', say:'两个一对'}, {n:'跳泥坑', say:'跳泥坑冲刺'}]
+  peppa:   [{n:'野餐分苹果', say:'野餐分苹果'}, {n:'两个一对', say:'两个一对'}, {n:'跳泥坑', say:'跳泥坑冲刺'}]
 };
 const ROUNDS_PER_LEVEL = 4;
 
@@ -900,6 +910,7 @@ function askNumber(stage, ctx, cfg){
         if(v === cfg.correct){
           c.classList.add('right'); Sfx.ding();
           UI.confetti(stage, 18);
+          if(cfg.onRight){ try{ cfg.onRight(); }catch(e){} }
           await sayAs(cfg.hostEl, `${NUM_CN[v]}！${pick(PRAISES)}${cfg.doneLine}`);
           if(!ctx.alive()) return;
           bar.remove();
@@ -961,6 +972,7 @@ function askIcons(stage, ctx, cfg){
         if(!ctx.alive()) return;
         if(o.id === cfg.correct){
           c.classList.add('right'); Sfx.ding(); UI.confetti(stage, 16);
+          if(cfg.onRight){ try{ cfg.onRight(); }catch(e){} }
           await sayAs(cfg.hostEl, `${pick(PRAISES)}${cfg.doneLine}`);
           if(!ctx.alive()) return;
           bar.remove(); resolve({firstTry});
@@ -983,7 +995,7 @@ function askIcons(stage, ctx, cfg){
   });
 }
 /* 骰子: 点击滚动, 落定回调(1-6); 骰面=感数复习 */
-function makeDice(stage, onSettle){
+function makeDice(stage, ctx, onSettle){
   const d = el('button','dicebtn', stage);
   for(let i = 0; i < 9; i++) el('i','', d);
   const FACE = {1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]};
@@ -991,14 +1003,15 @@ function makeDice(stage, onSettle){
   show(5);
   let busy = false, used = false;
   d.addEventListener('pointerdown', e => {
-    if(e.isPrimary === false || busy || used) return;
+    if(e.isPrimary === false || busy || used || !ctx.alive()) return;
     busy = true; Sfx.ensure(); Sfx.pop();
     d.classList.add('rolling');
     let ticks = 0;
     const iv = setInterval(() => {
+      if(!ctx.alive()){ clearInterval(iv); ctx.timers.delete(iv); return; }   // 退出即停(生命周期契约)
       show(1 + ri(6)); Sfx.pop();
       if(++ticks >= 7){
-        clearInterval(iv);
+        clearInterval(iv); ctx.timers.delete(iv);
         const v = 1 + ri(6);
         show(v);
         d.classList.remove('rolling');
@@ -1007,27 +1020,58 @@ function makeDice(stage, onSettle){
         onSettle(v);
       }
     }, T(120));
+    ctx.timers.add(iv);
   });
   return d;
 }
-/* 角色特性: 每回合至多触发一次的小彩蛋（不喧宾夺主） */
+/* 角色特性: 台词 + 专属动画, 每回合成功时触发一次（不喧宾夺主） */
 const TRAITS = {
-  wukong:   {win:'翻个跟头咯！',  cls:'spin'},
-  bajie:    {win:'嘿嘿，真香！',  cls:'wob'},
-  wujing:   {win:'稳稳的！',      cls:'bob'},
-  tangseng: {win:'善哉善哉！',    cls:'bob'},
-  bailongma:{win:'嘶——好棒！',   cls:'bob'},
-  yeye:     {win:'好娃娃！',      cls:'bob'},
-  ryder:    {win:'汪汪队立大功！', cls:'bob'},
-  bandit:   {win:'哇哦！',        cls:'wob'},
-  chilli:   {win:'做得好呀！',    cls:'bob'},
-  peppa:    {win:'我最喜欢跳泥坑！', cls:'wob'},
-  george:   {win:'恐龙！嗷呜！',  cls:'wob'},
-  ironman:  {win:'出击成功！',    cls:'bob'},
-  hulk:     {win:'浩克最棒！',    cls:'wob'},
-  spiderman:{win:'荡起来喽！',    cls:'wob'}
+  wukong:   {win:'看俺老孙翻个跟头咯！', cls:'tr-spin'},
+  bajie:    {win:'嘿嘿，真香！',      cls:'tr-wob'},
+  wujing:   {win:'稳稳的！',          cls:'tr-bob'},
+  tangseng: {win:'善哉善哉！',        cls:'tr-bob'},
+  bailongma:{win:'嘶——好棒！',       cls:'tr-bob'},
+  yeye:     {win:'好娃娃！',          cls:'tr-bob'},
+  ryder:    {win:'汪汪队立大功！',    cls:'tr-bob'},
+  chase:    {win:'阿奇就位！',        cls:'tr-wag'},
+  marshall: {win:'我没事哈哈！',      cls:'tr-wag'},
+  skye:     {win:'飞上天喽！',        cls:'tr-wag'},
+  rocky:    {win:'不浪费好东西！',    cls:'tr-wag'},
+  zuma:     {win:'冲浪时间到！',      cls:'tr-wag'},
+  rubble:   {win:'小砾上！',          cls:'tr-wag'},
+  bluey:    {win:'再来一次再来一次！', cls:'tr-bob'},
+  bingo:    {win:'耶！',              cls:'tr-bob'},
+  bandit:   {win:'哇哦，被你抓到啦！', cls:'tr-wob'},
+  chilli:   {win:'做得好呀！',        cls:'tr-bob'},
+  peppa:    {win:'我最喜欢跳泥坑！',  cls:'tr-wob'},
+  george:   {win:'恐龙！嗷呜！',      cls:'tr-wob'},
+  papa:     {win:'哈哈哈！',          cls:'tr-wob'},
+  mama:     {win:'真是聪明的孩子！',  cls:'tr-bob'},
+  ironman:  {win:'出击成功！',        cls:'tr-bob'},
+  cap:      {win:'我可以做一整天！',  cls:'tr-bob'},
+  thor:     {win:'雷霆万钧！',        cls:'tr-wob'},
+  hulk:     {win:'浩克最棒！',        cls:'tr-wob'},
+  blackwidow:{win:'干净利落！',       cls:'tr-bob'},
+  hawkeye:  {win:'正中靶心！',        cls:'tr-bob'},
+  spiderman:{win:'荡起来喽！',        cls:'tr-wob'},
+  miles:    {win:'电力全开！',        cls:'tr-wob'},
+  gwen:     {win:'轻轻一转！',        cls:'tr-spin'},
+  hulu1:{win:'力气最大！', cls:'tr-wob'}, hulu2:{win:'看得最远！', cls:'tr-bob'},
+  hulu3:{win:'铜头铁臂！', cls:'tr-wob'}, hulu4:{win:'喷火厉害！', cls:'tr-bob'},
+  hulu5:{win:'吸水本领强！', cls:'tr-bob'}, hulu6:{win:'隐身也被你找到！', cls:'tr-wob'},
+  hulu7:{win:'宝葫芦收！', cls:'tr-bob'},
+  shejing:{win:'哼, 算你厉害！', cls:'tr-wob'}, xiezijing:{win:'下次再来捣乱！', cls:'tr-wob'}
 };
 function traitLine(charId){ return (TRAITS[charId] && TRAITS[charId].win) || pick(PRAISES); }
+/* 播放角色特性动画: 对 hostBox 或任意含角色 img 的容器 */
+function playTrait(box, charId){
+  if(!box) return;
+  const img = box.querySelector('img.host, img.dchar, img.dog, img.pchar, img') || box;
+  const cls = (TRAITS[charId] && TRAITS[charId].cls) || 'tr-bob';
+  img.classList.remove('tr-spin','tr-wob','tr-bob','tr-wag'); void img.offsetWidth;
+  img.classList.add(cls);
+  setTimeout(() => img.classList.remove(cls), 1600);
+}
 
 /* ============ 9. 六岛专属游戏（v2） ============ */
 const GAMES = {
@@ -1068,6 +1112,7 @@ xiyou: { levels: [
           attempts++;
           if(got === n){
             resolved = true; Sfx.yay(); UI.confetti(stage, 14);
+            playTrait(host, 'wukong');
             await sayAs(host, `${traitLine('wukong')}正好${qtyCN(n)}个桃子！`);
             finish({firstTry: attempts === 1});
             return;
@@ -1152,7 +1197,7 @@ xiyou: { levels: [
               if(!ctx.alive()) return;
               phase = 1; cur = 0; attempts = 0; setPhase();
               const line2 = `给猪八戒装${qtyCN(b)}个，装好按绿勾！`;
-              App.setInstruction(line2); ctx.touch();
+              App.setInstruction(line2); ctx.nudge(line2); ctx.touch();   // 阶段切换同步更新空闲提醒文本
             }else{
               resolved = true; Sfx.yay(); UI.confetti(stage, 14);
               await Speech.say(`猪八戒舔舔嘴巴：嘿嘿真香！${qtyCN(b)}个正正好！`);
@@ -1251,7 +1296,7 @@ xiyou: { levels: [
 
 /* ---------- 葫芦山: 序数 → 排序 → 缺位推理 ---------- */
 hulu: { levels: [
-  { gen: r => ({target: [3, 1, 5, 7][r]}),
+  { gen: r => ({target: [1, 3, 5, 7][r]}),        // 序数 1-3-5-7 递进
     async run(stage, ctx){
       const {target} = ctx.params;
       title(stage, '点第几个');
@@ -1270,7 +1315,7 @@ hulu: { levels: [
       const intro = `葫芦娃排好队啦！点一点第${NUM_CN[target]}个娃！`;
       App.setInstruction(intro); Speech.say(intro);
       ctx.nudge(intro, () => row.querySelector(`[data-pos="${target}"]`));
-      ctx.maybeDemo([peds[0].btn]);
+      ctx.maybeDemo([peds[target - 1].btn]);        // 示范=指向本题正确的娃（教对不教错）
       let firstTry = true;
       await new Promise(res => {
         peds.forEach(({btn, i}) => btn.addEventListener('pointerdown', async e => {
@@ -1342,7 +1387,8 @@ hulu: { levels: [
                 if(ctx.alive()) res();
               });
             }else{
-              App.setInstruction(`第${NUM_CN[expect]}个是谁？点一点他！`);
+              const nx = `第${NUM_CN[expect]}个是谁？点一点他！`;
+              App.setInstruction(nx); ctx.nudge(nx);   // 每步同步空闲提醒文本(锚点函数已动态跟随 expect)
             }
           }else{
             firstTry = false; Sfx.soft();
@@ -1440,6 +1486,8 @@ hulu: { levels: [
             if(i === sa || i === sa + 1){
               if(picked.has(i)) return;
               picked.add(i);
+              btn.style.outline = '.6vmin solid #37b24d';   // 持续选中标记, 直到两个都找齐
+              btn.style.borderRadius = '2vmin';
               const im = btn.querySelector('img');
               im.classList.remove('hl'); void im.offsetWidth; im.classList.add('hl');
               Sfx.pop();
@@ -1465,15 +1513,16 @@ hulu: { levels: [
 
 /* ---------- 英雄城: 凑5 → 凑10 → 蛛网抓球 ---------- */
 avengers: { levels: [
-  { gen: r => ({total: 5, a: [2, 1, 4, 3][r]}),
+  { gen: r => ({total: 5, a: [4, 3, 2, 1][r]}),   // 缺口 1-2-3-4 递进
     async run(stage, ctx){ return heroCharge(stage, ctx, ctx.params); } },
-  { gen: r => ({total: 10, a: [6, 3, 8, 5][r]}),
+  { gen: r => ({total: 10, a: [8, 6, 4, 3][r]}),  // 缺口 2-4-6-7 递进
     async run(stage, ctx){ return heroCharge(stage, ctx, ctx.params); } },
   { gen: r => ({g: [6, 2, 8, 4][r]}),
     async run(stage, ctx){
       const {g} = ctx.params;
       title(stage, '蛛网抓球');
-      const host = hostBox(stage, ['spiderman','miles','gwen'][ctx.round % 3], {small:true, left:true});
+      const hostChar = ['spiderman','miles','gwen'][ctx.round % 3];
+      const host = hostBox(stage, hostChar, {small:true, left:true});
       const wb = el('div','webbox', stage);
       imgTag(itemImg('web'), 'wimg', wb);
       const need = 10 - g;
@@ -1507,12 +1556,13 @@ avengers: { levels: [
             b.classList.add('dim');
             flyImg(itemImg('star'), b.getBoundingClientRect(), host.getBoundingClientRect(), .3);
             Sfx.ding(); UI.confetti(stage, 16);
-            await sayAs(host, `${NUM_CN[g]}和${NUM_CN[need]}合起来是十！能量满格，出击！${traitLine('spiderman')}`);
+            playTrait(host, hostChar);
+            await sayAs(host, `${NUM_CN[g]}和${NUM_CN[need]}合起来是十！能量满格，出击！${traitLine(hostChar)}`);
             res();
           }else{
             firstTry = false; Sfx.soft();
             b.style.scale = '.88'; setTimeout(() => { b.style.scale = ''; }, 140);
-            await sayAs(host, `${NUM_CN[g]}和${NUM_CN[v]}合起来不是十哦。数数还差几格能到十？`);
+            await sayAs(host, `${NUM_CN[g]}和${NUM_CN[v]}合起来不是十哦。从${NUM_CN[g]}接着往后数到十，数了几个数？`);
           }
         }));
       });
@@ -1569,8 +1619,9 @@ paw: { levels: [
       const q = `骨头够吗？点一点：多了、正好、还是不够？`;
       App.setInstruction(q); await Speech.say(q);
       ctx.nudge(q, () => stage.querySelector('.icards'));
+      const wagAll = () => cols.forEach(c => playTrait(c.col, c.c));
       const {firstTry} = await askIcons(stage, ctx, {
-        correct: verdictId,
+        correct: verdictId, onRight: wagAll,
         options: [
           {id:'more', icon:'🦴➕', sub:'多了', sayText:'多了'},
           {id:'just', icon:'✔️',   sub:'正好', sayText:'正好'},
@@ -1619,6 +1670,7 @@ paw: { levels: [
       ctx.nudge(q, () => stage.querySelector('.cards'));
       const {firstTry} = await askNumber(stage, ctx, {
         correct: missing || surplus, max: 5, hostEl: null,
+        onRight: () => cols.forEach(c => playTrait(c.col, c.c)),
         reask: missing ? `数数几个空碗，就知道差几块啦！` : `数数盘子里剩几块！`,
         doneLine: missing ? `差${qtyCN(missing)}块！灰灰的回收车马上送来！` : `多了${qtyCN(surplus)}块，灰灰回收啦，不浪费！`,
         demo: async () => {
@@ -1667,6 +1719,12 @@ paw: { levels: [
       cols.forEach(c => { c.count = 0; });
       const mark = () => cols.forEach((c, i) => c.col.classList.toggle('receiving', i === turn % D));
       mark();
+      // 碗内堆叠真实骨头(视觉数量), 不显示数字徽章——答案须由孩子数出, 不能抄读（审查阻断项2）
+      const addBoneTo = c => {
+        const im = imgTag(itemImg('bone'), 'inbone', c.bowlwrap);
+        im.style.top = (8 + (c.count - 1) * 16) + '%';
+        im.style.transform = `translateX(-50%) rotate(${(c.count % 2 ? -14 : 14)}deg)`;
+      };
       const per = T / D;
       const intro = `${qtyCN(T)}块骨头分给${qtyCN(D)}只狗狗，每只一样多！轮到谁亮谁，点骨头发给它！`;
       App.setInstruction(intro); Speech.say(intro);
@@ -1680,9 +1738,7 @@ paw: { levels: [
           const c = cols[turn % D];
           flyImg(itemImg('bone'), b.getBoundingClientRect(), c.bowlwrap.getBoundingClientRect(), .5);
           c.count++;
-          let cnt = c.bowlwrap.querySelector('.bcnt');
-          if(!cnt) cnt = el('span','bcnt', c.bowlwrap);
-          cnt.textContent = c.count;
+          addBoneTo(c);
           Sfx.pop();
           Speech.countSay(NUM_CN[Math.min(++given, 10)]);
           turn++; mark();
@@ -1696,14 +1752,18 @@ paw: { levels: [
       ctx.nudge(q, () => stage.querySelector('.cards'));
       const {firstTry} = await askNumber(stage, ctx, {
         correct: per, max: 5, reask: `数数一只狗狗碗里有几块！`,
+        onRight: () => cols.forEach(c => playTrait(c.col, c.c)),
         doneLine: `${qtyCN(T)}块分给${qtyCN(D)}只，每只${qtyCN(per)}块，一样多！`,
         demo: async () => {
+          // 示范: 逐块高亮第一只狗碗里的骨头数
           const c = cols[0];
           c.col.classList.add('receiving');
-          for(let i = 1; i <= per; i++){
+          const bones = [...c.bowlwrap.querySelectorAll('.inbone')];
+          for(let i = 0; i < bones.length; i++){
             if(!ctx.alive()) return;
+            bones[i].classList.remove('hl'); void bones[i].offsetWidth; bones[i].classList.add('hl');
             Sfx.pop();
-            await Speech.say(NUM_CN[i], {tmo:1500, rate:1.05});
+            await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.05});
             await wait(130);
           }
           c.col.classList.remove('receiving');
@@ -1721,7 +1781,7 @@ bluey: { levels: [
       const {tiles, hopper, setPos} = tilePath(stage, 'bluey');
       let pos = ctx.state.pos || 0;
       setPos(pos, false);
-      const dice = makeDice(stage, async v => {
+      const dice = makeDice(stage, ctx, async v => {
         if(!ctx.alive()) return;
         stage.dataset.answer = v; stage.dataset.phase = 'dice';
         const q1 = `骰子是几点？`;
@@ -1747,7 +1807,7 @@ bluey: { levels: [
         if(!ctx.alive()) return;
         stage.dataset.answer = pos; stage.dataset.phase = 'landed';
         const q2 = `Bluey现在站在数字几？`;
-        App.setInstruction(q2); await Speech.say(q2);
+        App.setInstruction(q2); ctx.nudge(q2); await Speech.say(q2);
         const r2 = await askNumber(stage, ctx, {
           correct: pos, max: 10, reask: `看看Bluey脚下的数字！`,
           doneLine: `Bluey站在${NUM_CN[pos]}！${pos === 10 ? '到终点啦！全家欢呼！' : traitLine('bandit')}`,
@@ -1833,7 +1893,7 @@ bluey: { levels: [
         if(mode !== 'right'){
           stage.dataset.answer = should; stage.dataset.phase = 'fix';
           const q2 = `爸爸应该站在数字几？`;
-          App.setInstruction(q2); await Speech.say(q2);
+          App.setInstruction(q2); ctx.nudge(q2); await Speech.say(q2);
           const r2 = await askNumber(stage, ctx, {
             correct: should, max: 10, reask: `从${NUM_CN[pos] || '起点'}数${NUM_CN[v]}格！`,
             doneLine: `对！应该站在${NUM_CN[should]}！Bluey笑话爸爸喽！`,
@@ -1853,7 +1913,7 @@ bluey: { levels: [
       }
       return {firstTry};
     } },
-  { gen: r => { const P = [[3, 5], [5, 9], [2, 6], [6, 10]]; return {p: P[r][0], t: P[r][1]}; },
+  { gen: r => { const P = [[3, 4], [3, 5], [5, 8], [6, 10]]; return {p: P[r][0], t: P[r][1]}; },   // 差 1-2-3-4 递进
     async run(stage, ctx){
       const {p, t} = ctx.params;
       title(stage, '还差几格');
@@ -1886,7 +1946,7 @@ bluey: { levels: [
 
 /* ---------- 佩奇小镇: 摆餐具 → 两个一对 → 跳泥坑 ---------- */
 peppa: { levels: [
-  { gen: r => ({have: [3, 4, 2, 4][r]}),
+  { gen: r => ({have: [3, 2, 1, 4][r]}),          // 缺 1-2-3-0(零的概念压轴)
     async run(stage, ctx){
       const {have} = ctx.params;
       title(stage, '野餐分苹果');
@@ -1981,26 +2041,36 @@ peppa: { levels: [
       App.setInstruction(intro); sayAs(host, intro);
       ctx.nudge(intro, () => pile.querySelector('.item:not(.dim)') || stage.querySelector('.cards'));
       ctx.maybeDemo([btns[0]]);
-      let placed = 0, stolen = false;
+      let placed = 0, stolen = false, stealing = false;
+      // 完成条件重核验: 数量够且所有盒子成对(偷吃残缺时不得结束回合)（审查阻断项3）
+      const allPaired = () => boxes.every(bx => bx.querySelectorAll('img').length === 2);
       await new Promise(res => {
+        const tryFinish = () => {
+          if(placed === total && !stealing && allPaired()){
+            ctx.after(500, () => Speech.drain(4000).then(() => {
+              if(ctx.alive() && placed === total && !stealing && allPaired()) res();
+            }));
+          }
+        };
         btns.forEach(b => b.addEventListener('pointerdown', async e => {
-          if(e.isPrimary === false || !ctx.alive() || b.classList.contains('dim') || b.style.display === 'none') return;
+          if(e.isPrimary === false || !ctx.alive() || stealing || b.classList.contains('dim') || b.style.display === 'none') return;
           if(Speech.countBusy()){ UI.bump(b); return; }
           ctx.touch();
           b.classList.add('dim');
-          const bx = boxes[Math.floor(placed / 2)];
+          const bx = boxes.find(x => x.querySelectorAll('img').length < 2);   // 按盒内实物找空位, 与 placed 游标解耦
+          if(!bx){ return; }
           flyImg(itemImg('cookie'), b.getBoundingClientRect(), bx.getBoundingClientRect(), .6);
-          ctx.after(360, () => { if(ctx.alive()) imgTag(itemImg('cookie'), '', bx); });
+          imgTag(itemImg('cookie'), '', bx);
           placed++;
           Sfx.pop();
-          if(placed % 2 === 0){
+          if(bx.querySelectorAll('img').length === 2){
             bx.classList.add('full');
             Speech.say(`${qtyCN(placed)}块！`, {tmo:1800});
           }else{
             Speech.countSay(NUM_CN[Math.min(placed, 10)]);
           }
           if(steal && !stolen && placed === 4){
-            stolen = true;
+            stolen = true; stealing = true;           // 偷吃期间锁输入, 消除竞态
             ctx.after(700, async () => {
               if(!ctx.alive()) return;
               const papa = imgTag(charImg('papa'), 'traitchar', stage);
@@ -2008,7 +2078,7 @@ peppa: { levels: [
               Sfx.woosh();
               await Speech.say(`猪爸爸偷偷拿走了一块饼干！嗯——真好吃！`);
               if(!ctx.alive()) return;
-              const bx2 = boxes[1];
+              const bx2 = boxes.find(x => x.querySelectorAll('img').length === 2) || boxes[0];
               const im = bx2.querySelector('img'); if(im) im.remove();
               bx2.classList.remove('full');
               placed--;
@@ -2017,11 +2087,11 @@ peppa: { levels: [
               if(!ctx.alive()) return;
               btns[total].style.display = '';
               btns[total].classList.remove('dim');
+              stealing = false;
+              ctx.touch();
             });
           }
-          if(placed === total){
-            ctx.after(500, () => Speech.drain(4000).then(() => { if(ctx.alive()) res(); }));
-          }
+          tryFinish();
         }));
       });
       if(!ctx.alive()) return {aborted:true};
@@ -2044,7 +2114,7 @@ peppa: { levels: [
       });
       return {firstTry};
     } },
-  { gen: r => ({K: [4, 6, 7, 9][r]}),
+  { gen: r => ({K: [9, 7, 6, 4][r]}),             // 还差 1-3-4-6 递进
     async run(stage, ctx){
       const {K} = ctx.params;
       title(stage, '跳泥坑冲刺');
@@ -2101,7 +2171,8 @@ peppa: { levels: [
 async function heroCharge(stage, ctx, {total, a}){
   title(stage, total === 5 ? '凑五出击' : '凑十出击');
   const heroes = ['ironman','cap','thor','hulk','blackwidow','hawkeye','spiderman','miles','gwen'];
-  const host = hostBox(stage, heroes[ctx.round % heroes.length], {small:true});
+  const hostChar = heroes[ctx.round % heroes.length];
+  const host = hostBox(stage, hostChar, {small:true});
   const bar = el('div','energybar', stage);
   const slots = [];
   for(let i = 0; i < total; i++){
@@ -2114,7 +2185,7 @@ async function heroCharge(stage, ctx, {total, a}){
   const line = `任务需要${NUM_CN[total]}点能量！已经装了${qtyCN(a)}点，还差几点？`;
   App.setInstruction(line); sayAs(host, line);
   ctx.nudge(line, () => stage.querySelector('.cards'));
-  ctx.maybeDemo([bar]);
+  ctx.maybeDemo([bar, () => stage.querySelector('.cards')]);   // 示范: 看能量槽 → 到答案牌区作答（惰性）
   const {firstTry} = await askNumber(stage, ctx, {
     correct: need, max: total, hostEl: host,
     reask: `数一数还有几个空格子！`,
@@ -2140,7 +2211,8 @@ async function heroCharge(stage, ctx, {total, a}){
   }
   if(!ctx.alive()) return {aborted:true};
   Sfx.yay(); UI.confetti(stage, 14);
-  await sayAs(host, `出击！${traitLine('ironman')}`);
+  playTrait(host, hostChar);
+  await sayAs(host, `出击！${traitLine(hostChar)}`);
   if(!ctx.alive()) return {aborted:true};
   return {firstTry};
 }
@@ -2231,7 +2303,12 @@ class ActCtx {
     Store.data.seen[this.gameKey] = true; Store.save();
     this.assisted = true;       // 首遇示范回合不计独立掌握
     const self = this;
-    setTimeout(() => { if(self.alive()) Ghost.run(self, anchors.filter(Boolean)); }, T(1400));
+    setTimeout(() => {
+      if(!self.alive()) return;
+      // 惰性求值: 函数型锚点在示范时刻解析(此时牌区等延迟元素已存在)
+      const resolved = anchors.map(a => { try{ return typeof a === 'function' ? a() : a; }catch(e){ return null; } }).filter(Boolean);
+      if(resolved.length) Ghost.run(self, resolved);
+    }, T(1400));
   }
   nudge(text, anchorOrFn){
     // 轻声提醒: 9s 无操作且引擎空闲时重复当前指令, 最多2次; 第2次附带幽灵手指点（U3/U8）。
@@ -2282,7 +2359,7 @@ const App = {
     $('#btnStart').addEventListener('click', () => {
       Sfx.unlock();
       Speech.unlock('嗨！欢迎来到数字小英雄乐园！点一个小岛，我们一起去玩吧！');
-      this.toMap();
+      this.toMap(true);
     });
     // 回家: 两次点按确认（U2 防误触; 命中框≥88px 但视觉弱化）; 玩关→关卡页
     $('#btnHome').addEventListener('pointerdown', e => {
@@ -2339,7 +2416,7 @@ const App = {
         this.transitioning = true;
         Sfx.ensure(); Sfx.pop(); UI.bump(b);
         Speech.say(`去${w.name}喽！`);
-        setTimeout(() => { this.transitioning = false; this.openIsland(w); }, T(700));
+        setTimeout(() => { this.transitioning = false; this.openIsland(w); }, T(350));
       });
     });
   },
@@ -2352,7 +2429,8 @@ const App = {
 
   setInstruction(text){ this.lastInstruction = {text, sid:this.sessionId}; },
 
-  toMap(){
+  toMap(keepSpeech){
+    if(!keepSpeech) Speech.stopAll();               // boot 欢迎语场景例外（军规1: 首句不可被掐）
     this.sessionId++;
     if(this.currentCtx){ this.currentCtx.dispose(); this.currentCtx = null; }
     const st = $('#stage');
@@ -2405,7 +2483,7 @@ const App = {
         }
         this.transitioning = true;
         Speech.say(`第${NUM_CN[i + 1]}关，${meta.say}！`);
-        setTimeout(() => { this.transitioning = false; this.playLevel(world, i); }, T(900));
+        setTimeout(() => { this.transitioning = false; this.playLevel(world, i); }, T(400));
       });
     });
     this.show('sceneLevels');
@@ -2414,6 +2492,7 @@ const App = {
 
   toLevels(){
     if(!this.currentWorld){ this.toMap(); return; }
+    Speech.stopAll();
     this.sessionId++;
     if(this.currentCtx){ this.currentCtx.dispose(); this.currentCtx = null; }
     const st = $('#stage');
@@ -2428,6 +2507,9 @@ const App = {
     const sid = ++this.sessionId;
     this.currentWorld = world;
     $('#playBg').src = `assets/bg/bg_${world.id}.png`;
+    $('#levelsBg').removeAttribute('src');           // 隐藏场景不保留位图
+    $('#lvHost').removeAttribute('src');
+    $('#lvBtns').innerHTML = '';
     $('#stage').innerHTML = '';
     const rounds = ROUNDS_PER_LEVEL;
     const dots = $('#dots'); dots.innerHTML = '';
@@ -2454,6 +2536,7 @@ const App = {
     const prog = Store.data.islands[world.id];
     const firstClear = prog.stars[li] !== 1;
     prog.stars[li] = 1;
+    prog.ind[li] = Math.max(prog.ind[li] || 0, independents);   // 独立完成回合数(历史最好), 家长面板可见
     if(li + 1 < 3 && prog.unlocked < li + 2) prog.unlocked = li + 2;
     Store.save();
     await this.bigCele(world, sid, li, firstClear);
@@ -2534,7 +2617,8 @@ const Parent = {
       <h2>家长面板 <span style="font-size:12px;color:#889">v${KM_VERSION}</span></h2>
       <h3>关卡进度</h3>
       <div>${WORLDS.map(w => { const pr = Store.data.islands[w.id];
-        return `<span class="skl">${w.name}（${mathName[w.id]}）· ${pr.stars.map(v => v ? '⭐' : '○').join('')}</span>`; }).join('')}</div>
+        const ind = pr.stars.map((v, i) => v ? `独立${pr.ind[i]}/${ROUNDS_PER_LEVEL}` : '—');
+        return `<span class="skl">${w.name}（${mathName[w.id]}）· ${pr.stars.map(v => v ? '⭐' : '○').join('')} · ${ind.join(' ')}</span>`; }).join('')}</div>
       <div class="row">⭐ 星星总数：<b>${Store.data.stars}</b></div>
       <h3>语音诊断</h3>
       <div class="diag">支持TTS: ${d.supported} ｜ 已解锁: ${d.unlocked} ｜ 曾出声: ${d.everWorked}<br>

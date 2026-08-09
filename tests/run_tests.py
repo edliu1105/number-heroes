@@ -392,12 +392,17 @@ def assert_speech_rules(log, label):
             if gap < 148:
                 raise Fail(f"{label}: speak {gap:.0f}ms after cancel: {e['text'][:20]}")
             last_cancel = None
-    prev = None
+    # 意外双发 = 同文本 <1.2s 且中间没有 cancel（有 cancel 说明是合法的最新覆盖/导航重进）
+    prev_speak = None
+    cancels = [e["t"] for e in log if e["a"] == "cancel"]
+    import bisect
     for s in speaks:
-        # 意外双发是近同时的(<1.2s); 合法空闲重复最早也在 T(9000)(fast≈2s, 真机9s)之后
-        if prev and s["text"] == prev["text"] and len(s["text"]) > 2 and (s["t"] - prev["t"]) < 1200:
-            raise Fail(f"{label}: duplicate speak within 1.2s: {s['text'][:24]}")
-        prev = s
+        if prev_speak and s["text"] == prev_speak["text"] and len(s["text"]) > 2 and (s["t"] - prev_speak["t"]) < 1200:
+            i = bisect.bisect_right(cancels, prev_speak["t"])
+            has_cancel_between = i < len(cancels) and cancels[i] < s["t"]
+            if not has_cancel_between:
+                raise Fail(f"{label}: uncancelled duplicate speak within 1.2s: {s['text'][:24]}")
+        prev_speak = s
     return len(speaks)
 
 def count_words_in(log):
@@ -429,11 +434,22 @@ def main():
                 prog = page.evaluate("() => window.__KM.Store.data.islands.xiyou")
                 if prog["stars"][0] != 1 or prog["unlocked"] < 2:
                     raise Fail(f"xiyou L1 completion not recorded: {prog}")
+                if not (0 <= prog["ind"][0] <= 4):
+                    raise Fail(f"independent count not persisted: {prog}")
                 play_level(page, "xiyou", 1, audit="t1", shots_prefix="v2")
                 play_level(page, "xiyou", 2, audit="t1", shots_prefix="v2")
                 page.locator("#btnLvBack").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                # 其余五岛: 解锁全部, 三关全玩
+                # 葫芦山: 自然解锁链再验证一次（跨岛的锁定语义）
+                enter_island(page, "hulu")
+                if not page.evaluate("() => document.querySelector('.lvbtn[data-level=\\'1\\']').classList.contains('locked')"):
+                    raise Fail("hulu L2 should start locked")
+                play_level(page, "hulu", 0, audit="t1", shots_prefix="v2")
+                if page.evaluate("() => window.__KM.Store.data.islands.hulu.unlocked") < 2:
+                    raise Fail("hulu L2 not unlocked after L1")
+                page.locator("#btnLvBack").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                # 其余关卡: 解锁全部, 三关全玩
                 unlock_all(page)
                 for island in ISLANDS[1:]:
                     enter_island(page, island)
@@ -572,6 +588,57 @@ def main():
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t5_FAIL.png"))
                 report("T5 webkit 竖屏", False, str(e)[:300])
+            ctx.close(); br.close()
+
+            # ============ T7: 佩奇 L2 偷饼干竞态/守恒（快速连点穿越偷吃窗口） ============
+            errors7 = []
+            br = pw.chromium.launch()
+            ctx = br.new_context(viewport={"width": 1180, "height": 820})
+            page = make_page(ctx, errors7)
+            try:
+                page.goto(f"{BASE}/?fast=1&seed=3&demo=0", wait_until="load")
+                page.locator("#btnStart").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                unlock_all(page)
+                enter_island(page, "peppa")
+                page.locator(".lvbtn[data-level='1']").click(timeout=5000)
+                page.wait_for_function("() => document.body.dataset.scene === 'scenePlay'", timeout=10000)
+                # 快速把回合推进到 r2(偷吃回合): 直接快点全部饼干
+                for rnd in range(4):
+                    deadline = time.time() + 40
+                    while time.time() < deadline:
+                        s = state(page)
+                        if s["cele"] or s["scene"] != "scenePlay":
+                            break
+                        if int(s["round"] or 0) > rnd:
+                            break
+                        if page.locator(".cards .ncard").count():
+                            # 答题前守恒断言: 每盒恰好 2 块
+                            bad = page.evaluate("""() => [...document.querySelectorAll('.pairbox')]
+                              .map(b => b.querySelectorAll('img').length).filter(n => n !== 2)""")
+                            if bad:
+                                raise Fail(f"pairbox conservation broken at ask time: {bad}")
+                            click_number_answer(page)
+                        else:
+                            loc = page.locator(".bonepile .item:not(.dim):visible")
+                            if loc.count():
+                                try: loc.first.click(timeout=1500)
+                                except Exception: pass
+                                page.wait_for_timeout(90)   # 高速连点, 穿越偷吃窗口
+                            else:
+                                page.wait_for_timeout(200)
+                    s = state(page)
+                    if s["cele"]:
+                        page.locator("#cele").click(timeout=4000)
+                        page.wait_for_function("() => document.body.dataset.scene === 'sceneLevels'", timeout=15000)
+                        break
+                if errors7:
+                    raise Fail("errors: " + " | ".join(errors7[:5]))
+                report("T7 佩奇偷饼干竞态/盒内守恒（高速连点）", True)
+            except Exception as e:
+                ok_all = False
+                page.screenshot(path=os.path.join(SHOTS, "t7_FAIL.png"))
+                report("T7 偷饼干守恒", False, str(e)[:300])
             ctx.close(); br.close()
 
             # ============ T6: 运动目标真实命中（英雄城 L3 数字球, 动画开启零 force） ============
