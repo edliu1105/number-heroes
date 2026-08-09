@@ -83,6 +83,9 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .item:active{transform:translate(-50%,-50%) scale(.9)}
 .cbadge{position:absolute;top:-3.4vmin;left:50%;transform:translateX(-50%);background:#ff6b6b;color:#fff;font-weight:900;font-size:3.6vmin;min-width:5.4vmin;height:5.4vmin;border-radius:50%;display:flex;align-items:center;justify-content:center;border:.5vmin solid #fff;box-shadow:0 .4vmin 1vmin rgba(120,0,0,.3);animation:popin .25s}
 .hl{animation:hlflash .55s ease-in-out}
+.countbadge{position:absolute;z-index:40;background:#ff6b6b;color:#fff;font-weight:900;font-size:4.2vmin;min-width:6vmin;min-height:6vmin;height:6vmin;border-radius:50%;display:flex;align-items:center;justify-content:center;border:.5vmin solid #fff;box-shadow:0 .5vmin 1.2vmin rgba(120,0,0,.35);animation:popin .3s;transform:translate(-50%,-110%);pointer-events:none}
+.demo-boost{animation:demoboost .6s ease-in-out}
+@keyframes demoboost{0%,100%{scale:1}45%{scale:1.4}}
 
 /* answer cards */
 .cards{position:absolute;left:50%;bottom:max(3vmin,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:3vmin;z-index:20}
@@ -362,7 +365,7 @@ body.calm .balloon,body.calm .boot-chars img,body.calm .island .ihost,body.calm 
    ===================================================================== */
 
 /* ============ 1. Util ============ */
-const KM_VERSION = '2.0.0';
+const KM_VERSION = '2.1.0';
 const $ = s => document.querySelector(s);
 const QP = new URLSearchParams(location.search);
 const FAST = QP.get('fast') === '1';
@@ -849,16 +852,96 @@ async function sayAs(box, text, opts){
   await Speech.say(text, opts);
   if(box) box.classList.remove('talking');
 }
-/* 依次示范点数（答错后的脚手架）。高亮加在内层 img 上——img 无基础 transform, 动画不会使元素跳位 */
-async function demoCount(ctx, items){
-  for(let i = 0; i < items.length; i++){
-    if(!ctx.alive()) return;
-    const t = items[i].querySelector('img') || items[i];
-    t.classList.remove('hl'); void t.offsetWidth;
-    t.classList.add('hl'); Sfx.pop();
-    await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
-    await wait(140);
+/* 数数视觉标记: 目标弹大 + 头顶蹦出数字徽章(保留至本轮数数结束) */
+function markStep(node, num){
+  const target = (node.tagName === 'IMG') ? node : (node.querySelector('img') || node);
+  target.classList.remove('demo-boost'); void target.offsetWidth;
+  target.classList.add('demo-boost');
+  // 徽章挂到可定位的父容器, 悬于目标上方
+  const holder = node.tagName === 'IMG' ? node.parentElement : node;
+  if(getComputedStyle(holder).position === 'static') holder.style.position = 'relative';
+  const b = document.createElement('span');
+  b.className = 'countbadge';
+  b.textContent = num;
+  if(node.tagName === 'IMG'){
+    b.style.left = (node.offsetLeft + node.offsetWidth / 2) + 'px';
+    b.style.top = node.offsetTop + 'px';
+  }else{
+    b.style.left = '50%'; b.style.top = '0';
   }
+  holder.appendChild(b);
+  return b;
+}
+/* 依次示范点数（第二级脚手架: app 示范）。数到哪个哪个弹大+显数字, 徽章保留到数完 */
+async function demoCount(ctx, items, opts){
+  const words = (opts && opts.word) || (i => NUM_CN[i + 1]);
+  const badges = [];
+  for(let i = 0; i < items.length; i++){
+    if(!ctx.alive()) break;
+    badges.push(markStep(items[i], (opts && opts.label) ? opts.label(i) : (i + 1)));
+    Sfx.pop();
+    await Speech.say(words(i), {tmo:1500, rate:1.0});
+    await wait(160);
+  }
+  await wait(650);
+  badges.forEach(b => b.remove());
+}
+/* 孩子自己重数（第一级脚手架, 主动点数）:
+   mode direct: 每个目标可点一次; mode advance: 点大目标(条/篮/骰), 每点推进一步高亮 targets[i]。
+   每步: 弹大 + 数字徽章 + 计数词(背压通道)。全部数完 resolve。 */
+function childCount(ctx, cfg){
+  return new Promise(res => {
+    const targets = cfg.targets;
+    const n = targets.length;
+    let i = 0, done = false;
+    const badges = [];
+    const finish = () => {
+      if(done) return;
+      done = true;
+      ctx.after(700, () => {
+        badges.forEach(b => b.remove());
+        cleanup();
+        if(ctx.alive()) res();
+      });
+    };
+    const step = () => {
+      if(done || !ctx.alive() || i >= n) return;
+      if(Speech.countBusy()) return;               // 背压: 上个数词没念完不推进
+      const el0 = targets[i];
+      badges.push(markStep(el0, cfg.label ? cfg.label(i) : (i + 1)));
+      Sfx.pop();
+      Speech.countSay(cfg.word ? cfg.word(i) : NUM_CN[i + 1]);
+      i++;
+      ctx.touch();
+      if(i >= n) finish();
+    };
+    let handlers = [];
+    const cleanup = () => { handlers.forEach(([el0, h]) => el0.removeEventListener('pointerdown', h)); handlers = []; };
+    if(cfg.mode === 'advance'){
+      const big = cfg.bigTarget;
+      const h = e => { if(e.isPrimary === false) return; Sfx.ensure(); step(); };
+      big.addEventListener('pointerdown', h);
+      handlers.push([big, h]);
+    }else{
+      // direct 模式: 任意顺序点, 点谁谁弹大冒数字(徽章按点击次序 1,2,3…——基数与顺序无关)
+      targets.forEach(el0 => {
+        const h2 = e => { if(e.isPrimary === false || done) return; Sfx.ensure();
+          if(el0.dataset.cc === '1') return;
+          if(Speech.countBusy()){ UI.bump(el0); return; }
+          el0.dataset.cc = '1';
+          badges.push(markStep(el0, i + 1));
+          Sfx.pop();
+          Speech.countSay(cfg.word ? cfg.word(i) : NUM_CN[i + 1]);
+          i++; ctx.touch();
+          if(i >= n){ targets.forEach(x => delete x.dataset.cc); finish(); }
+        };
+        el0.addEventListener('pointerdown', h2);
+        handlers.push([el0, h2]);
+      });
+    }
+    // 兜底: 60s 无法完成(异常场景)自动结束, 避免卡死
+    ctx.after(60000, finish);
+  });
 }
 /* 五格框/骰子式稳定点位（感数与点阵提示用, V4） */
 function frameSpots(n){
@@ -924,10 +1007,17 @@ function askNumber(stage, ctx, cfg){
           resolve({firstTry});
         }else{
           firstTry = false; wrongs++; Sfx.soft(); c.classList.add('dim');
-          await sayAs(cfg.hostEl, `这是${NUM_CN[v]}。我们再一起数一数！`);
-          if(!ctx.alive()) return;
           bar.style.visibility = 'hidden';
-          if(cfg.demo) await cfg.demo();
+          if(wrongs === 1 && cfg.recount){
+            // 一级脚手架: 孩子自己点着重数（主动点数, 不是旁观）
+            await sayAs(cfg.hostEl, `这是${NUM_CN[v]}。来，你自己点一点，数一数！`);
+            if(!ctx.alive()) return;
+            await cfg.recount();
+          }else{
+            await sayAs(cfg.hostEl, `这是${NUM_CN[v]}。我们再一起数一数！`);
+            if(!ctx.alive()) return;
+            if(cfg.demo) await cfg.demo();
+          }
           if(!ctx.alive()) return;
           bar.style.visibility = '';
           if(wrongs >= 2){
@@ -1125,15 +1215,12 @@ xiyou: { levels: [
             return;
           }
           Sfx.soft();
-          await sayAs(host, `我们数数篮子里有几个……`);
-          if(!ctx.alive()) return;
-          const inBasket = bk.items();               // 逐颗高亮篮内实物数数（可见的一一对应）
-          for(let i = 0; i < inBasket.length; i++){
+          const inBasket = bk.items();
+          if(inBasket.length){
+            await sayAs(host, `来，点一点篮子，一个一个数！`);
             if(!ctx.alive()) return;
-            inBasket[i].classList.remove('hl'); void inBasket[i].offsetWidth; inBasket[i].classList.add('hl');
-            Sfx.pop();
-            await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
-            await wait(110);
+            await childCount(ctx, {mode:'advance', bigTarget: bk.elm, targets: inBasket});   // 孩子自己数(主动点数)
+            if(!ctx.alive()) return;
           }
           await sayAs(host, `${got === 0 ? '篮子还是空的呀！' : '是' + qtyCN(got) + '个。'}我要${qtyCN(n)}个哦！再试试吧！`);
           if(!ctx.alive()) return;
@@ -1217,7 +1304,14 @@ xiyou: { levels: [
             return;
           }
           firstTryAll = false; Sfx.soft();
-          await Speech.say(`数一数这个篮子：${cur === 0 ? '还是空的！' : ''}要装${qtyCN(tgt())}个哦，再试试！`);
+          const inB = box().items();
+          if(inB.length){
+            await Speech.say(`来，点一点篮子，一个一个数！`);
+            if(!ctx.alive()) return;
+            await childCount(ctx, {mode:'advance', bigTarget: box().elm, targets: inB});
+            if(!ctx.alive()) return;
+          }
+          await Speech.say(`是${cur === 0 ? '空的' : qtyCN(cur) + '个'}！要装${qtyCN(tgt())}个哦，再试试！`);
           if(!ctx.alive()) return;
           cur = 0; box().set(0); box().clearItems();
           peaches.forEach(p => { if(p.dataset.ph === String(phase)){ p.classList.remove('dim'); delete p.dataset.ph; } });
@@ -1301,6 +1395,7 @@ xiyou: { levels: [
       const {firstTry} = await askNumber(stage, ctx, {
         correct: N - K, hostEl: host, reask: `还剩几个桃子呀？`,
         doneLine: `${qtyCN(N)}个吃掉${qtyCN(K)}个，还剩${qtyCN(N - K)}个！`,
+        recount: () => childCount(ctx, {targets: remain}),
         demo: () => demoCount(ctx, remain)
       });
       return {firstTry};
@@ -1681,24 +1776,17 @@ paw: { levels: [
       stage.dataset.answer = missing || surplus;
       App.setInstruction(q); Speech.say(q);
       ctx.nudge(q, () => stage.querySelector('.cards'));
+      const gapTargets = missing ? cols.slice(bones).map(c => c.bowlwrap)
+                                 : [...stage.querySelectorAll('.bonepile .item')];
       const {firstTry} = await askNumber(stage, ctx, {
         correct: missing || surplus, max: 5, hostEl: null,
         onRight: () => cols.forEach(c => playTrait(c.col, c.c)),
         reask: missing ? `数数几个空碗，就知道差几块啦！` : `数数盘子里剩几块！`,
         doneLine: missing ? `差${qtyCN(missing)}块！灰灰的回收车马上送来！` : `多了${qtyCN(surplus)}块，灰灰回收啦，不浪费！`,
-        demo: async () => {
-          if(missing){
-            for(let i = bones; i < dogs; i++){
-              if(!ctx.alive()) return;
-              cols[i].col.classList.add('receiving'); Sfx.pop();
-              await Speech.say(NUM_CN[i - bones + 1], {tmo:1500, rate:1.05});
-              cols[i].col.classList.remove('receiving');
-              await wait(120);
-            }
-          }else{
-            await demoCount(ctx, [...stage.querySelectorAll('.bonepile .item')]);
-          }
-        }
+        recount: () => childCount(ctx, missing
+          ? {mode:'advance', bigTarget: stage.querySelector('.dogrow'), targets: gapTargets}
+          : {targets: gapTargets}),
+        demo: () => demoCount(ctx, gapTargets)
       });
       if(!ctx.alive()) return {aborted:true};
       if(missing){
@@ -1767,18 +1855,13 @@ paw: { levels: [
         correct: per, max: 5, reask: `数数一只狗狗碗里有几块！`,
         onRight: () => cols.forEach(c => playTrait(c.col, c.c)),
         doneLine: `${qtyCN(T)}块分给${qtyCN(D)}只，每只${qtyCN(per)}块，一样多！`,
+        recount: () => { cols[0].col.classList.add('receiving');
+          return childCount(ctx, {mode:'advance', bigTarget: cols[0].col, targets: [...cols[0].bowlwrap.querySelectorAll('.inbone')]})
+            .then(() => cols[0].col.classList.remove('receiving')); },
         demo: async () => {
-          // 示范: 逐块高亮第一只狗碗里的骨头数
           const c = cols[0];
           c.col.classList.add('receiving');
-          const bones = [...c.bowlwrap.querySelectorAll('.inbone')];
-          for(let i = 0; i < bones.length; i++){
-            if(!ctx.alive()) return;
-            bones[i].classList.remove('hl'); void bones[i].offsetWidth; bones[i].classList.add('hl');
-            Sfx.pop();
-            await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.05});
-            await wait(130);
-          }
+          await demoCount(ctx, [...c.bowlwrap.querySelectorAll('.inbone')]);
           c.col.classList.remove('receiving');
         }
       });
@@ -1800,10 +1883,12 @@ bluey: { levels: [
         const q1 = `骰子是几点？`;
         App.setInstruction(q1); await Speech.say(q1);
         ctx.nudge(q1, () => stage.querySelector('.cards'));
+        const dots = [...dice.children].filter(d => d.style.visibility !== 'hidden');
         const r1 = await askNumber(stage, ctx, {
           correct: v, max: 6, reask: `数数骰子上的点点！`,
           doneLine: `骰子是${NUM_CN[v]}点！Bluey要跳${NUM_CN[v]}格喽！`,
-          demo: async () => { await Speech.say(`我们数骰子上的点点：${Array.from({length: v}, (_, i) => NUM_CN[i + 1]).join('、')}！`, {tmo:6000}); }
+          recount: () => childCount(ctx, {mode:'advance', bigTarget: dice, targets: dots}),
+          demo: () => demoCount(ctx, dots)
         });
         if(!ctx.alive()) return;
         ctx._ft = ctx._ft && r1.firstTry;
@@ -1907,16 +1992,13 @@ bluey: { levels: [
           stage.dataset.answer = should; stage.dataset.phase = 'fix';
           const q2 = `爸爸应该站在数字几？`;
           App.setInstruction(q2); ctx.nudge(q2, () => stage.querySelector('.cards')); await Speech.say(q2);
+          const hopTiles = tiles.slice(pos, Math.min(pos + v, 10));
           const r2 = await askNumber(stage, ctx, {
             correct: should, max: 10, reask: `从${NUM_CN[pos] || '起点'}数${NUM_CN[v]}格！`,
             doneLine: `对！应该站在${NUM_CN[should]}！Bluey笑话爸爸喽！`,
-            demo: async () => {
-              for(let i = 1; i <= v && ctx.alive(); i++){
-                setPos(pos + i, true); Sfx.pop();
-                await Speech.say(NUM_CN[pos + i], {tmo:1500, rate:1.05});
-                await wait(140);
-              }
-            }
+            recount: () => childCount(ctx, {mode:'advance', bigTarget: stage.querySelector('.tilepath'), targets: hopTiles,
+              word: i => NUM_CN[pos + i + 1], label: i => pos + i + 1}),
+            demo: () => demoCount(ctx, hopTiles, {word: i => NUM_CN[pos + i + 1], label: i => pos + i + 1})
           });
           firstTry = firstTry && r2.firstTry;
           if(!ctx.alive()) return {aborted:true};
@@ -1937,16 +2019,12 @@ bluey: { levels: [
       const q = `Bluey站在${NUM_CN[p]}，要跳到小旗子${NUM_CN[t]}那里，还要跳几格？`;
       App.setInstruction(q); Speech.say(q);
       ctx.nudge(q, () => stage.querySelector('.cards'));
+      const gapTiles = tiles.slice(p, t);
       const {firstTry} = await askNumber(stage, ctx, {
         correct: t - p, max: 5, reask: `从${NUM_CN[p]}一格一格数到${NUM_CN[t]}！`,
         doneLine: `再跳${NUM_CN[t - p]}格就到啦！`,
-        demo: async () => {
-          for(let i = p + 1; i <= t && ctx.alive(); i++){
-            tiles[i - 1].classList.add('hop'); Sfx.pop();
-            await Speech.say(NUM_CN[i - p], {tmo:1500, rate:1.05});
-            await wait(140);
-          }
-        }
+        recount: () => childCount(ctx, {mode:'advance', bigTarget: stage.querySelector('.tilepath'), targets: gapTiles}),
+        demo: () => demoCount(ctx, gapTiles)
       });
       if(!ctx.alive()) return {aborted:true};
       for(let i = p + 1; i <= t && ctx.alive(); i++){ setPos(i, true); Sfx.pop(); await wait(200); }
@@ -2115,15 +2193,8 @@ peppa: { levels: [
         correct: total, max: 10, hostEl: host,
         reask: `跟我一起两块两块数：二、四……`,
         doneLine: `一共${qtyCN(total)}块！两个两个数又快又棒！乔治笑啦：恐龙！嗷呜！`,
-        demo: async () => {
-          for(let i = 1; i <= pairs; i++){
-            if(!ctx.alive()) return;
-            boxes[i - 1].style.scale = '1.12'; Sfx.pop();
-            await Speech.say(NUM_CN[i * 2], {tmo:1600, rate:1.0});
-            boxes[i - 1].style.scale = '';
-            await wait(140);
-          }
-        }
+        recount: () => childCount(ctx, {targets: boxes, word: i => NUM_CN[(i + 1) * 2], label: i => (i + 1) * 2}),
+        demo: () => demoCount(ctx, boxes, {word: i => NUM_CN[(i + 1) * 2], label: i => (i + 1) * 2})
       });
       return {firstTry};
     } },
@@ -2150,18 +2221,13 @@ peppa: { levels: [
       const q = `佩奇已经跳了${qtyCN(K)}个泥坑！要跳满十个，还要跳几个？`;
       App.setInstruction(q); Speech.say(q);
       ctx.nudge(q, () => stage.querySelector('.cards'));
+      const restPuds = puds.slice(K);
       const {firstTry} = await askNumber(stage, ctx, {
         correct: 10 - K, max: 6,
         reask: `从${NUM_CN[K]}数到十，数数还有几个没跳！`,
         doneLine: `还要跳${qtyCN(10 - K)}个！`,
-        demo: async () => {
-          for(let i = K + 1; i <= 10 && ctx.alive(); i++){
-            puds[i - 1].style.scale = '1.15'; Sfx.pop();
-            await Speech.say(NUM_CN[i - K], {tmo:1500, rate:1.05});
-            puds[i - 1].style.scale = '';
-            await wait(130);
-          }
-        }
+        recount: () => childCount(ctx, {mode:'advance', bigTarget: stage.querySelector('.puddlerow'), targets: restPuds}),
+        demo: () => demoCount(ctx, restPuds)
       });
       if(!ctx.alive()) return {aborted:true};
       for(let i = K + 1; i <= 10 && ctx.alive(); i++){
@@ -2199,19 +2265,13 @@ async function heroCharge(stage, ctx, {total, a}){
   App.setInstruction(line); sayAs(host, line);
   ctx.nudge(line, () => stage.querySelector('.cards'));
   ctx.maybeDemo([bar, () => stage.querySelector('.cards')]);   // 示范: 看能量槽 → 到答案牌区作答（惰性）
+  const emptySlots = slots.slice(a);
   const {firstTry} = await askNumber(stage, ctx, {
     correct: need, max: total, hostEl: host,
     reask: `数一数还有几个空格子！`,
     doneLine: `${qtyCN(a)}点加${qtyCN(need)}点，正好${NUM_CN[total]}点！能量满格！`,
-    demo: async () => {
-      for(let i = a; i < total; i++){
-        if(!ctx.alive()) return;
-        slots[i].classList.add('hintpulse'); Sfx.pop();
-        await Speech.say(NUM_CN[i - a + 1], {tmo:1500, rate:1.05});
-        await wait(130);
-      }
-      slots.forEach(s => s.classList.remove('hintpulse'));
-    }
+    recount: () => childCount(ctx, {mode:'advance', bigTarget: bar, targets: emptySlots}),
+    demo: () => demoCount(ctx, emptySlots)
   });
   if(!ctx.alive()) return {aborted:true};
   // 蜘蛛侠送能量填格

@@ -198,15 +198,28 @@ def drive_round(page, audit=None, wrong_once=False):
                 page.wait_for_timeout(300)
                 if page.locator("#btnDone").count():
                     page.locator("#btnDone").click()
-                page.wait_for_timeout(1500)          # 脚手架念数
+                page.wait_for_timeout(900)
                 wrong_once = False
-                # 复位后重来 + 视觉守恒: 篮内实物必须清空（回归: 桃子未真正落篮/未清空类 bug）
-                deadline2 = time.time() + 20
-                while time.time() < deadline2 and page.locator(".peach-on-tree:not(.dim)").count() < n:
-                    page.wait_for_timeout(200)
-                leftover = page.evaluate("() => document.querySelectorAll('.bcontent img').length")
-                if leftover != 0:
-                    raise Fail(f"basket not cleared after wrong submit: {leftover} items remain")
+                # 一级脚手架 = 孩子自己点篮子数(childCount advance): 驱动器点篮子直到复位
+                # 复位信号 = 篮子清空 且 树上桃子全部恢复(总数 m)
+                total_peaches = page.locator(".peach-on-tree").count()
+                deadline2 = time.time() + 30
+                saw_badge = False
+                while time.time() < deadline2:
+                    in_basket = page.evaluate("() => document.querySelectorAll('.bcontent img').length")
+                    undimmed = page.locator(".peach-on-tree:not(.dim)").count()
+                    if not saw_badge and page.locator(".countbadge").count() > 0:
+                        saw_badge = True                    # 数数动画(弹大+数字徽章)确实出现
+                    if in_basket == 0 and undimmed == total_peaches:
+                        break
+                    loc = page.locator(".basketbox").first
+                    try: loc.click(timeout=1200)
+                    except Exception: pass
+                    page.wait_for_timeout(380)
+                else:
+                    raise Fail("recount/reset did not complete after wrong submit")
+                if not saw_badge:
+                    raise Fail("recount ran without count badges (animation missing)")
                 continue
             got = page.evaluate("() => document.querySelectorAll('.peach-on-tree.dim').length")
             need = n - (got if act.endswith("L1") else 0)
@@ -233,6 +246,25 @@ def drive_round(page, audit=None, wrong_once=False):
         while page.locator(".countable:not(.counted)").count() and time.time() < deadline:
             page.locator(".countable:not(.counted)").first.click(timeout=4000)
             page.wait_for_timeout(200)
+        if wrong_once:
+            # 练习一级脚手架: 答错→孩子自己点着重数(childCount direct)→再答对
+            page.wait_for_selector(".cards .ncard", timeout=15000)
+            ans = page.evaluate("() => document.querySelector('#stage').dataset.answer || ''")
+            w = page.locator(f".cards .ncard:not([data-value='{ans}'])")
+            if w.count():
+                w.first.click(timeout=3000)
+            page.wait_for_timeout(800)
+            deadline2 = time.time() + 25
+            while time.time() < deadline2:
+                vis = page.evaluate("() => { const b = document.querySelector('.cards'); return b && getComputedStyle(b).visibility !== 'hidden'; }")
+                if vis:
+                    break
+                loc = page.locator(".countable:visible")
+                if loc.count():
+                    try: loc.first.click(timeout=1200)
+                    except Exception: pass
+                page.wait_for_timeout(360)
+            # 重数期间应出现计数徽章（动画断言）
         click_number_answer(page)
     elif act == "huluL1":
         ans = st0["answer"]
@@ -446,7 +478,7 @@ def main():
                 if not (0 <= prog["ind"][0] <= 4):
                     raise Fail(f"independent count not persisted: {prog}")
                 play_level(page, "xiyou", 1, audit="t1", shots_prefix="v2")
-                play_level(page, "xiyou", 2, audit="t1", shots_prefix="v2")
+                play_level(page, "xiyou", 2, audit="t1", wrong_once=True, shots_prefix="v2")   # L3 练习"自己数"一级脚手架
                 page.locator("#btnLvBack").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 # 葫芦山: 自然解锁链再验证一次（跨岛的锁定语义）
