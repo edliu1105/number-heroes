@@ -170,11 +170,15 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .gametitle{position:absolute;top:max(2vmin,env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:rgba(255,255,255,.9);border-radius:3vmin;padding:.8vmin 2.6vmin;font-size:3vmin;font-weight:900;color:#7a5b2e;z-index:24;box-shadow:0 .5vmin 1.6vmin rgba(90,60,0,.2);white-space:nowrap}
 .tree{position:absolute;left:2%;top:8%;width:52vmin;max-width:56%;z-index:2}
 .tree img{width:100%;height:auto}
-.peach-on-tree{position:absolute;width:11vmin;height:11vmin;min-width:88px;min-height:88px;transform:translate(-50%,-50%);z-index:5}
+.peach-on-tree{position:absolute;width:11vmin;height:11vmin;min-width:88px;min-height:88px;transform:translate(-50%,-50%);z-index:5;transition:opacity .25s}
+.peach-on-tree.dim{opacity:0;pointer-events:none}   /* 被摘走的桃子从树上消失(它在篮子里了), 守恒 */
 .basketbox{position:absolute;display:flex;flex-direction:column;align-items:center;z-index:6}
 .basketbox img.bimg{width:22vmin;min-width:120px;height:auto}
 .basketbox .bcount{position:absolute;top:-5vmin;left:50%;transform:translateX(-50%);background:#fff;border-radius:2.4vmin;min-width:8vmin;padding:.4vmin 1.6vmin;font-size:6vmin;font-weight:900;color:#e8590c;text-align:center;box-shadow:0 .5vmin 1.4vmin rgba(90,60,0,.25)}
 .basketbox .bname{background:rgba(255,255,255,.85);border-radius:2.4vmin;padding:.3vmin 1.6vmin;font-size:2.4vmin;font-weight:800;color:#7a5b2e;margin-top:.4vmin}
+.basketbox .bwrap{position:relative}
+.basketbox .bcontent{position:absolute;inset:0;pointer-events:none;z-index:2}
+.basketbox .bcontent img{position:absolute;width:30%;height:auto;filter:drop-shadow(0 .4vmin .8vmin rgba(60,40,0,.25));animation:popin .25s}
 .basketbox.activeb .bimg{filter:drop-shadow(0 0 2.4vmin rgba(255,200,40,.95))}
 .pedestal-row{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);display:flex;gap:1.2vmin;align-items:flex-end;z-index:5}
 .ped{display:flex;flex-direction:column;align-items:center;width:12vmin;min-width:92px}
@@ -192,6 +196,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .webbox img.wimg{width:100%;height:auto;opacity:.92}
 .numball{position:absolute;width:13vmin;height:13vmin;min-width:92px;min-height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6.5vmin;font-weight:900;color:#fff;text-shadow:0 .4vmin 0 rgba(0,0,0,.2);box-shadow:inset -1vmin -1.4vmin 0 rgba(0,0,0,.12),0 .8vmin 2vmin rgba(60,40,0,.25);transform:translate(-50%,-50%);z-index:6;animation:floaty 4s ease-in-out infinite}
 .numball:active{transform:translate(-50%,-50%) scale(.9)}
+.numball.dim{opacity:0;pointer-events:none;transition:opacity .3s}   /* 被抓走的能量球从网上消失 */
 .dogrow{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);display:flex;gap:2.4vmin;align-items:flex-end;z-index:5}
 .dogcol{display:flex;flex-direction:column;align-items:center;gap:.6vmin;width:15vmin;min-width:100px}
 .dogcol img.dog{width:100%;height:auto}
@@ -201,7 +206,9 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 .dogcol .bowlwrap .bcnt{position:absolute;right:-1.2vmin;top:-2vmin;background:#ff6b6b;color:#fff;font-weight:900;font-size:3vmin;min-width:4.6vmin;height:4.6vmin;border-radius:50%;display:flex;align-items:center;justify-content:center;border:.4vmin solid #fff}
 .dogcol.receiving img.dog{filter:drop-shadow(0 0 2.4vmin rgba(255,200,40,.95));transform:scale(1.06)}
 .bonepile{position:absolute;left:max(16vmin,120px);bottom:max(3vmin,env(safe-area-inset-bottom));display:flex;flex-wrap:wrap;gap:1.2vmin;max-width:calc(72% - 120px);background:rgba(255,255,255,.45);border-radius:3vmin;padding:1.6vmin;z-index:6}
-.bonepile .item{position:relative;transform:none;width:11vmin;height:11vmin}
+.bonepile .item{position:relative;transform:none;width:11vmin;height:11vmin;transition:opacity .25s}
+.bonepile .item.dim{opacity:0;pointer-events:none}        /* 发出去的从堆里消失(在碗/座位/盒子里了), 守恒 */
+.bonepile .item.extra.dim{opacity:1;pointer-events:none}  /* "多出来的"留在堆里作为'多了'的证据 */
 .tilepath{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);display:flex;gap:.9vmin;z-index:4;align-items:flex-end}
 .tile{width:9.5vmin;height:11vmin;min-width:60px;min-height:70px;border-radius:2vmin;background:linear-gradient(#fdf6e3,#efd9a7);box-shadow:0 .8vmin 0 #c9a86a;display:flex;align-items:center;justify-content:center;font-size:4.6vmin;font-weight:900;color:#8a6d3b;position:relative}
 .tile.hop{background:linear-gradient(#fff3bf,#ffd43b);box-shadow:0 .8vmin 0 #e8a805}
@@ -1120,15 +1127,17 @@ xiyou: { levels: [
           Sfx.soft();
           await sayAs(host, `我们数数篮子里有几个……`);
           if(!ctx.alive()) return;
-          for(let i = 0; i < got; i++){
+          const inBasket = bk.items();               // 逐颗高亮篮内实物数数（可见的一一对应）
+          for(let i = 0; i < inBasket.length; i++){
             if(!ctx.alive()) return;
-            Sfx.pop(); bk.bump();
+            inBasket[i].classList.remove('hl'); void inBasket[i].offsetWidth; inBasket[i].classList.add('hl');
+            Sfx.pop();
             await Speech.say(NUM_CN[i + 1], {tmo:1500, rate:1.0});
             await wait(110);
           }
           await sayAs(host, `${got === 0 ? '篮子还是空的呀！' : '是' + qtyCN(got) + '个。'}我要${qtyCN(n)}个哦！再试试吧！`);
           if(!ctx.alive()) return;
-          got = 0; bk.set(0);
+          got = 0; bk.set(0); bk.clearItems();       // 桃子飞回树上(视觉: 清空篮子+树上复位)
           peaches.forEach(p => p.classList.remove('dim'));
           if(attempts >= 2){ ctx.assisted = true; await Ghost.run(ctx, peaches.slice(0, n)); }
         } finally { uiBusy = false; }
@@ -1138,7 +1147,9 @@ xiyou: { levels: [
         if(Speech.countBusy()){ UI.bump(b); return; }
         ctx.touch();
         b.classList.add('dim');
-        flyImg(itemImg('peach'), b.getBoundingClientRect(), bk.elm.getBoundingClientRect(), .35);
+        // 抛物线飞进篮口, 落篮瞬间篮内真实出现一颗桃子(可见累积)
+        flyArc(itemImg('peach'), b.getBoundingClientRect(), bk.mouthRect(), .5,
+          () => { if(ctx.alive() && !resolved){ bk.addItem(itemImg('peach')); bk.bump(); } });
         got++;
         Speech.countSay(NUM_CN[Math.min(got, 10)]);
         Sfx.pop(); bk.set(got);
@@ -1208,7 +1219,7 @@ xiyou: { levels: [
           firstTryAll = false; Sfx.soft();
           await Speech.say(`数一数这个篮子：${cur === 0 ? '还是空的！' : ''}要装${qtyCN(tgt())}个哦，再试试！`);
           if(!ctx.alive()) return;
-          cur = 0; box().set(0);
+          cur = 0; box().set(0); box().clearItems();
           peaches.forEach(p => { if(p.dataset.ph === String(phase)){ p.classList.remove('dim'); delete p.dataset.ph; } });
           if(attempts >= 2){ ctx.assisted = true; await Ghost.run(ctx, peaches.filter(p => !p.classList.contains('dim')).slice(0, tgt())); }
         } finally { uiBusy = false; }
@@ -1218,7 +1229,9 @@ xiyou: { levels: [
         if(Speech.countBusy()){ UI.bump(btn); return; }
         ctx.touch();
         btn.classList.add('dim'); btn.dataset.ph = String(phase);
-        flyImg(itemImg('peach'), btn.getBoundingClientRect(), box().elm.getBoundingClientRect(), .35);
+        const tb = box();
+        flyArc(itemImg('peach'), btn.getBoundingClientRect(), tb.mouthRect(), .5,
+          () => { if(ctx.alive() && !resolved){ tb.addItem(itemImg('peach')); tb.bump(); } });
         cur++;
         Speech.countSay(NUM_CN[Math.min(cur, 10)]);
         Sfx.pop(); box().set(cur);
@@ -2232,14 +2245,52 @@ function basketBox(stage, charId, posCss){
     const ch = imgTag(charImg(charId), '', box);
     ch.style.cssText += 'width:14vmin;min-width:90px;height:auto';
   }
-  const bi = imgTag(itemImg('basket'), 'bimg', box);
+  const bwrap = el('div','bwrap', box);
+  const bi = imgTag(itemImg('basket'), 'bimg', bwrap);
+  const content = el('div','bcontent', bwrap);
   const cnt = el('div','bcount', box); cnt.textContent = '0';
   if(charId){ const nm = el('div','bname', box); nm.textContent = CHARS[charId]; }
+  // 篮内桃子槽位: 沿篮口排布, 上层微微探出篮沿（top 为负=高出篮口）
+  const SLOTS = [[10, 12], [33, 6], [56, 8], [72, 14], [20, -6], [44, -10], [62, -5]];
   return {
     elm: box,
     set(v){ cnt.textContent = v; },
+    /* 落篮实物: 第 k 颗(1起) */
+    addItem(src){
+      const k = content.children.length;
+      const [x, y] = SLOTS[Math.min(k, SLOTS.length - 1)];
+      const im = imgTag(src, '', content);
+      im.style.left = x + '%'; im.style.top = y + '%';
+      im.style.transform = `rotate(${k % 2 ? -12 : 10}deg)`;
+      return im;
+    },
+    items(){ return [...content.children]; },
+    clearItems(){ content.innerHTML = ''; },
+    /* 篮口目标区(飞行落点): 篮图上部开口 */
+    mouthRect(){
+      const r = bi.getBoundingClientRect();
+      return {left: r.left + r.width * .3, top: r.top - r.height * .02, width: r.width * .4, height: r.height * .3};
+    },
     bump(){ box.style.scale = '1.06'; setTimeout(() => { box.style.scale = ''; }, 140); }
   };
+}
+/* 抛物线飞行(WAAPI 三帧): 桃子入篮等抛掷类动作, 不中途消失, 落点即实物出现点 */
+function flyArc(src, fromRect, toRect, endScale, onLand){
+  const f = imgTag(src, 'flyer', document.body);
+  f.style.cssText += `left:${fromRect.left}px;top:${fromRect.top}px;width:${fromRect.width}px;height:${fromRect.height}px`;
+  const dx = toRect.left + toRect.width / 2 - fromRect.left - fromRect.width / 2;
+  const dy = toRect.top + toRect.height / 2 - fromRect.top - fromRect.height / 2;
+  const dur = T(520);
+  try{
+    f.animate([
+      {transform: 'translate(0,0) scale(1)'},
+      {transform: `translate(${dx * .5}px, ${dy * .5 - Math.max(70, Math.abs(dx) * .18)}px) scale(${(1 + endScale) / 2})`, offset: .55},
+      {transform: `translate(${dx}px, ${dy}px) scale(${endScale})`}
+    ], {duration: dur, easing: 'ease-in-out', fill: 'forwards'});
+  }catch(e){
+    f.style.transform = `translate(${dx}px, ${dy}px) scale(${endScale})`;
+  }
+  setTimeout(() => { f.remove(); if(onLand){ try{ onLand(); }catch(e){} } }, dur);
 }
 function dogRow(stage, charIds){
   const row = el('div','dogrow', stage);

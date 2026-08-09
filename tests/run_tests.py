@@ -200,10 +200,13 @@ def drive_round(page, audit=None, wrong_once=False):
                     page.locator("#btnDone").click()
                 page.wait_for_timeout(1500)          # 脚手架念数
                 wrong_once = False
-                # 复位后重来
+                # 复位后重来 + 视觉守恒: 篮内实物必须清空（回归: 桃子未真正落篮/未清空类 bug）
                 deadline2 = time.time() + 20
                 while time.time() < deadline2 and page.locator(".peach-on-tree:not(.dim)").count() < n:
                     page.wait_for_timeout(200)
+                leftover = page.evaluate("() => document.querySelectorAll('.bcontent img').length")
+                if leftover != 0:
+                    raise Fail(f"basket not cleared after wrong submit: {leftover} items remain")
                 continue
             got = page.evaluate("() => document.querySelectorAll('.peach-on-tree.dim').length")
             need = n - (got if act.endswith("L1") else 0)
@@ -212,7 +215,13 @@ def drive_round(page, audit=None, wrong_once=False):
                 tap_pool(page, ".peach-on-tree:not(.dim)", n)
             else:
                 tap_pool(page, ".peach-on-tree:not(.dim)", max(0, need))
-            page.wait_for_timeout(400)
+            page.wait_for_timeout(500)
+            # 视觉守恒断言: 提交前, 活动篮内必须真实出现对应数量的桃子实物（本类 bug 的回归门）
+            expect_in = n
+            sel = ".basketbox.activeb .bcontent img" if act.endswith("L2") else ".bcontent img"
+            in_basket = page.evaluate(f"() => document.querySelectorAll('{sel}').length")
+            if in_basket != expect_in:
+                raise Fail(f"{act}: basket shows {in_basket} peaches, expected {expect_in} (visual conservation)")
             if page.locator("#btnDone").count():
                 try: page.locator("#btnDone").click(timeout=2000)
                 except Exception: pass
