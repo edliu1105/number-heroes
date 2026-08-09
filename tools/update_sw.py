@@ -3,7 +3,7 @@
 import os, io
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-CACHE_VER = "km-v1"
+CACHE_VER = "km-v2"
 
 def main():
     core = ["./", "index.html", "manifest.webmanifest",

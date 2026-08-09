@@ -1,5 +1,5 @@
 /* 数字小英雄 service worker — 页面网络优先 / 素材缓存优先 */
-const CACHE = 'km-v1';
+const CACHE = 'km-v2';
 const CORE = [
   './',
   'index.html',

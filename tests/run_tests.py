@@ -527,7 +527,7 @@ def main():
             try:
                 page.goto(f"{BASE}/?fast=1&demo=0", wait_until="load")
                 page.evaluate("() => navigator.serviceWorker.ready")
-                page.wait_for_function("""() => caches.open('km-v1').then(c=>c.match('index.html')).then(r=>!!r)""", timeout=20000)
+                page.wait_for_function("""() => caches.open('km-v2').then(c=>c.match('index.html')).then(r=>!!r)""", timeout=20000)
                 page.wait_for_timeout(3000)
                 ctx.set_offline(True)
                 page.reload(wait_until="load")
