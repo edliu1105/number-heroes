@@ -275,7 +275,7 @@ body[data-scene="sceneBoot"] #hudStars{display:none}
 @keyframes popin{0%{transform:scale(0);opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1);opacity:1}}
 .pop-in{animation:popin .35s backwards}
 @keyframes floaty{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-1.1vmin)}}
-body.calm .balloon,body.calm .boot-chars img,body.calm .island .ihost,body.calm .cele-chars img,body.calm .cele-star,body.calm #btnStart{animation:none!important}
+body.calm .balloon,body.calm .boot-chars img,body.calm .island .ihost,body.calm .cele-chars img,body.calm .cele-star,body.calm #btnStart,body.calm .tr-spin,body.calm .tr-wob,body.calm .tr-bob,body.calm .tr-wag{animation:none!important}
 @keyframes wiggle{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-7deg)}75%{transform:translate(-50%,-50%) rotate(7deg)}}
 @keyframes balloonpop{40%{transform:translate(-50%,-50%) scale(1.35);opacity:1}100%{transform:translate(-50%,-50%) scale(1.9);opacity:0}}
 @keyframes hlflash{0%,100%{filter:none;scale:1}50%{filter:drop-shadow(0 0 3vmin rgba(255,210,40,1)) brightness(1.2);scale:1.22}}
@@ -1112,8 +1112,8 @@ xiyou: { levels: [
           attempts++;
           if(got === n){
             resolved = true; Sfx.yay(); UI.confetti(stage, 14);
-            playTrait(host, 'wukong');
             await sayAs(host, `${traitLine('wukong')}正好${qtyCN(n)}个桃子！`);
+            playTrait(host, 'wukong');
             finish({firstTry: attempts === 1});
             return;
           }
@@ -1556,8 +1556,8 @@ avengers: { levels: [
             b.classList.add('dim');
             flyImg(itemImg('star'), b.getBoundingClientRect(), host.getBoundingClientRect(), .3);
             Sfx.ding(); UI.confetti(stage, 16);
-            playTrait(host, hostChar);
             await sayAs(host, `${NUM_CN[g]}和${NUM_CN[need]}合起来是十！能量满格，出击！${traitLine(hostChar)}`);
+            playTrait(host, hostChar);
             res();
           }else{
             firstTry = false; Sfx.soft();
@@ -1893,7 +1893,7 @@ bluey: { levels: [
         if(mode !== 'right'){
           stage.dataset.answer = should; stage.dataset.phase = 'fix';
           const q2 = `爸爸应该站在数字几？`;
-          App.setInstruction(q2); ctx.nudge(q2); await Speech.say(q2);
+          App.setInstruction(q2); ctx.nudge(q2, () => stage.querySelector('.cards')); await Speech.say(q2);
           const r2 = await askNumber(stage, ctx, {
             correct: should, max: 10, reask: `从${NUM_CN[pos] || '起点'}数${NUM_CN[v]}格！`,
             doneLine: `对！应该站在${NUM_CN[should]}！Bluey笑话爸爸喽！`,
@@ -2211,8 +2211,8 @@ async function heroCharge(stage, ctx, {total, a}){
   }
   if(!ctx.alive()) return {aborted:true};
   Sfx.yay(); UI.confetti(stage, 14);
-  playTrait(host, hostChar);
   await sayAs(host, `出击！${traitLine(hostChar)}`);
+  playTrait(host, hostChar);
   if(!ctx.alive()) return {aborted:true};
   return {firstTry};
 }

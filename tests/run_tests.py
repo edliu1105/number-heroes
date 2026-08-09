@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """数字小英雄 v2 — Playwright 发布门槛测试
 运行: python tests/run_tests.py
-覆盖: 六岛×三关全走查(18关/72回合) / 关卡解锁断言 / 语音时间线 / 错误路径脚手架 /
-     快速连点 / 断网整关 / webkit 竖屏矩阵 / 运动目标真实命中 / 触摸目标≥88px
+六个顶层用例: T1 全走查(六岛19关+解锁+独立度+语音时间线) / T3 连点压力 / T4 离线整关 /
+     T5 webkit竖屏12关矩阵 / T7 偷饼干守恒 / T6 运动目标真实命中
 """
 import json, os, subprocess, sys, time, socket
 from playwright.sync_api import sync_playwright
