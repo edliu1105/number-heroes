@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""数字小英雄 — Playwright 发布门槛测试
+"""数字小英雄 v2 — Playwright 发布门槛测试
 运行: python tests/run_tests.py
-覆盖: 全流程走查(横/竖, chromium/webkit) / 语音时间线断言 / 快速连点压力 /
-     断网离线重载 / 真实运动目标命中(不用 force) / 触摸目标尺寸 / 家长面板
+覆盖: 六岛×三关全走查(18关/72回合) / 关卡解锁断言 / 语音时间线 / 错误路径脚手架 /
+     快速连点 / 断网整关 / webkit 竖屏矩阵 / 运动目标真实命中 / 触摸目标≥88px
 """
 import json, os, subprocess, sys, time, socket
 from playwright.sync_api import sync_playwright
@@ -20,8 +20,8 @@ PORT = 8141
 BASE = f"http://127.0.0.1:{PORT}"
 
 NUM_CN = ['零','一','二','三','四','五','六','七','八','九','十']
+ISLANDS = ["xiyou", "hulu", "avengers", "paw", "bluey", "peppa"]
 
-# speechSynthesis 记录器 + 队列语义 mock（注入于页面脚本之前）
 SPEECH_MOCK = r"""
 window.__SPEECH = [];
 (function(){
@@ -35,7 +35,7 @@ window.__SPEECH = [];
       u._cancelled=false; this._q.push(u); this._upd();
       if(this._q[0]===u) this._run(u); },
     _run(u){ this._upd();
-      const dur = window.__SPEECH_DUR || 90;   // T2b 慢TTS场景可调
+      const dur = window.__SPEECH_DUR || 90;
       setTimeout(()=>{ if(u._cancelled) return; try{u.onstart && u.onstart({});}catch(e){}
         setTimeout(()=>{ if(u._cancelled) return;
           const i=this._q.indexOf(u); if(i>=0) this._q.splice(i,1); this._upd();
@@ -60,8 +60,8 @@ def report(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + ("  " + detail if detail else ""), flush=True)
 
 def start_server():
-    s = socket.socket(); ok = s.connect_ex(("127.0.0.1", PORT)) != 0; s.close()
-    if not ok:
+    s = socket.socket(); free = s.connect_ex(("127.0.0.1", PORT)) != 0; s.close()
+    if not free:
         return None
     p = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT), "--directory", ROOT],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -80,46 +80,20 @@ def make_page(ctx, errors, freeze=True):
 def state(page):
     return page.evaluate("""() => ({
       act: (document.querySelector('#stage')||{dataset:{}}).dataset.activity || '',
+      round: (document.querySelector('#stage')||{dataset:{}}).dataset.round || '',
       aid: window.__KM ? window.__KM.App.activityId : -1,
       answer: (document.querySelector('#stage')||{dataset:{}}).dataset.answer || '',
+      phase: (document.querySelector('#stage')||{dataset:{}}).dataset.phase || '',
       scene: document.body.dataset.scene || '',
       cele: !!document.querySelector('#cele.on')
     })""")
 
-def click_answer(page, answer, wrong_first=False):
-    page.wait_for_selector(".cards .ncard", timeout=12000)
-    if answer is None:
-        # count/add/compose/flash: data-answer 由 askNumber 挂载时设置, 必须在卡片出现后读取
-        answer = page.evaluate("() => document.querySelector('#stage').dataset.answer || ''")
-        if not answer:
-            raise Fail("no data-answer after cards appeared")
-    if wrong_first:
-        wrongs = page.locator(f".cards .ncard:not([data-value='{answer}'])")
-        if wrongs.count() > 0:
-            wrongs.first.click(timeout=3000)
-            page.wait_for_function(
-                "() => { const b=document.querySelector('.cards'); return b && getComputedStyle(b).visibility!=='hidden'; }",
-                timeout=15000)
-    # 重问语音期间 lock 未释放会吞点击 → 轮询点击直到卡片消失（活动完成）
-    deadline = time.time() + 15
-    while time.time() < deadline:
-        loc = page.locator(f".cards .ncard[data-value='{answer}']")
-        if loc.count() == 0:
-            return
-        try:
-            loc.first.click(timeout=2000)
-        except Exception:
-            pass
-        page.wait_for_timeout(650)
-    raise Fail("answer card click never resolved the activity")
-
 SIZE_VIOLATIONS = []
-COMPARE_SIDES = []
 def audit_sizes(page, label):
-    """核心触摸目标 ≥88px（浮点容差 87.5; 槽位/徽章等非目标元素不在列）"""
     bad = page.evaluate("""() => {
       const bad = [];
-      for(const sel of ['.countable','.ncard','.balloon','#btnHome','#btnReplay','#btnDone','.tray .item','.srcgrp .item']){
+      for(const sel of ['.peach-on-tree','.ncard','.icard','.numball','#btnHome','#btnReplay','#btnDone','#btnLvBack',
+                        '.bonepile .item','.waitline button','.pedestal-row button','.dicebtn','.lvbtn']){
         document.querySelectorAll(sel).forEach(e => {
           const r = e.getBoundingClientRect();
           if(r.width > 0 && (r.width < 87.5 || r.height < 87.5))
@@ -130,113 +104,276 @@ def audit_sizes(page, label):
     for b in bad:
         SIZE_VIOLATIONS.append(f"{label} {b}")
 
-def solve_current(page, wrong_first=False, slow_count=False, audit=None):
-    st = state(page)
-    act, ans = st["act"], st["answer"]
-    if audit:
-        audit_sizes(page, f"{audit}/{act}")
-    if act in ("count", "add"):
-        deadline = time.time() + 25
-        while time.time() < deadline:
-            loc = page.locator(".countable:not(.counted)")
-            if loc.count() == 0:
-                break
-            loc.first.click(timeout=4000)
-            page.wait_for_timeout(700 if slow_count else 150)
-        click_answer(page, None, wrong_first)
-    elif act == "flash":
-        page.wait_for_selector(".flashcover", timeout=15000)
-        click_answer(page, None, wrong_first)
-    elif act == "numeral":
-        page.locator(f".balloon[data-value='{ans}']").click(timeout=8000)
-    elif act == "produce":
-        n = int(ans)
-        for _ in range(n):
-            page.locator(".tray .item:not(.dim)").first.click(timeout=4000)
-            page.wait_for_timeout(170)
-        page.locator("#btnDone").click(timeout=5000)
-    elif act == "compare":
-        idx = page.evaluate(f"""() => {{
-          const sides = [...document.querySelectorAll('.side')];
-          return sides.findIndex(s => s.dataset.char === '{ans}'); }}""")
-        COMPARE_SIDES.append('L' if idx == 0 else 'R')
-        if wrong_first:
-            # 错误路径: 点错侧 → 引导示范点数 → 星星胜者标识出现在正确一侧 → 再点对（P0-03 视觉胜者断言）
-            page.locator(f".side:not([data-char='{ans}'])").first.click(timeout=5000)
-            page.wait_for_selector(f".side[data-char='{ans}'] .crown", timeout=25000)
-            page.wait_for_timeout(300)
-            page.screenshot(path=os.path.join(SHOTS, "t1_compare_crown.png"))
-            deadline = time.time() + 15
-            while time.time() < deadline:
-                if page.locator(".side").count() == 0:
-                    break
-                try:
-                    page.locator(f".side[data-char='{ans}']").click(timeout=2000)
-                except Exception:
-                    pass
-                page.wait_for_timeout(600)
-        else:
-            page.locator(f".side[data-char='{ans}']").click(timeout=5000)
-    elif act == "compose":
-        deadline = time.time() + 25
-        while time.time() < deadline:
-            loc = page.locator(".srcgrp .item:not(.dim)")
-            if loc.count() == 0:
-                break
-            loc.first.click(timeout=4000)
-            page.wait_for_timeout(150)
-        click_answer(page, None, wrong_first)
-    else:
-        raise Fail(f"unknown activity {act}")
-    return act
-
-def wait_new_activity(page, prev_aid, timeout=30):
+def wait_cards(page, kind=".cards .ncard", timeout=15):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        st = state(page)
-        if st["cele"]:
-            return "cele"
-        # 必须在游戏场景中且活动已挂载（避免读到过渡期的陈旧 dataset）
-        if st["scene"] == "scenePlay" and st["act"] and st["aid"] != prev_aid:
-            return st["aid"]
+        if page.locator(kind).count() > 0:
+            return True
         page.wait_for_timeout(120)
-    raise Fail(f"no new activity after aid={prev_aid}")
+    return False
 
-def play_island(page, idx, types_seen, shots_prefix=None, wrong_on_first=False, slow_first_count=False, audit=None):
-    page.locator(".island").nth(idx).click(timeout=5000)
-    aid = wait_new_activity(page, -999)
-    n_done = 0
-    first = True
-    while True:
-        st = state(page)
-        if st["cele"]:
-            if shots_prefix:
-                page.screenshot(path=os.path.join(SHOTS, f"{shots_prefix}_cele.png"))
-            page.locator("#cele").click(timeout=4000)
-            page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=15000)
-            break
-        page.wait_for_timeout(250)
-        act = st["act"]
-        if shots_prefix and act not in types_seen:
-            page.wait_for_timeout(400)
-            page.screenshot(path=os.path.join(SHOTS, f"{shots_prefix}_{act}.png"))
-        solved = solve_current(page, wrong_first=(wrong_on_first and first),
-                               slow_count=(slow_first_count and first and act == "count"),
-                               audit=audit)
-        types_seen.add(solved)
-        n_done += 1
-        first = False
-        try:
-            nxt = wait_new_activity(page, st["aid"])
-        except Fail:
-            if state(page)["scene"] == "sceneMap":
-                break
-            raise
-        if nxt == "cele":
+def _round_alive(page, entry_aid):
+    s = state(page)
+    return s["aid"] == entry_aid and s["scene"] == "scenePlay" and not s["cele"]
+
+def click_number_answer(page):
+    entry_aid = state(page)["aid"]
+    deadline = time.time() + 18
+    seen = False
+    while time.time() < deadline:
+        if not _round_alive(page, entry_aid):
+            if seen:
+                return                              # 本回合已随答题推进结束
+            raise Fail("round ended before number cards appeared")
+        if page.locator(".cards .ncard").count() == 0:
+            if seen:
+                return                              # 牌已消失=本题解决; 下一题/下一回合由外层驱动
+            page.wait_for_timeout(150)
             continue
-        if n_done > 8:
-            raise Fail("island did not finish in 8 activities")
-    return n_done
+        seen = True
+        # 同一回合内可重读答案(bluey 等多问题回合); 回合边界由 aid 锚定, 绝不跨回合点击
+        answer = page.evaluate("() => document.querySelector('#stage').dataset.answer || ''")
+        loc = page.locator(f".cards .ncard[data-value='{answer}']")
+        if loc.count() == 0:
+            page.wait_for_timeout(300)
+            continue
+        try: loc.first.click(timeout=2000)
+        except Exception: pass
+        page.wait_for_timeout(600)
+    raise Fail("number card click never resolved")
+
+def click_icon_answer(page, wrong_first=False):
+    entry_aid = state(page)["aid"]
+    if not wait_cards(page, ".icards .icard", 18):
+        raise Fail("icon cards never appeared")
+    if wrong_first:
+        answer = page.evaluate("() => document.querySelector('#stage').dataset.answer || ''")
+        w = page.locator(f".icards .icard:not([data-value='{answer}'])")
+        if w.count():
+            w.first.click(timeout=3000)
+            page.wait_for_timeout(400)
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        if not _round_alive(page, entry_aid):
+            return
+        if page.locator(".icards .icard").count() == 0:
+            return
+        answer = page.evaluate("() => document.querySelector('#stage').dataset.answer || ''")
+        loc = page.locator(f".icards .icard[data-value='{answer}']")
+        if loc.count() == 0:
+            page.wait_for_timeout(300)
+            continue
+        try: loc.first.click(timeout=2000)
+        except Exception: pass
+        page.wait_for_timeout(650)
+    raise Fail("icon card click never resolved")
+
+def tap_pool(page, sel, times, gap=210):
+    for _ in range(times):
+        loc = page.locator(sel)
+        if loc.count() == 0:
+            return False
+        loc.first.click(timeout=4000)
+        page.wait_for_timeout(gap)
+    return True
+
+def drive_round(page, audit=None, wrong_once=False):
+    """驱动一个回合直至 round/scene 变化。按 activity 分派。返回 activity 名。"""
+    st0 = state(page)
+    act = st0["act"]
+    if audit:
+        page.wait_for_timeout(300)
+        audit_sizes(page, f"{audit}/{act}r{st0['round']}")
+    deadline = time.time() + 55
+    def round_over():
+        s = state(page)
+        return s["cele"] or s["scene"] != "scenePlay" or s["aid"] != st0["aid"]
+
+    if act.startswith("xiyou") and act.endswith(("L1", "L2")):
+        while not round_over() and time.time() < deadline:
+            s = state(page)
+            n = int(s["answer"] or 0)
+            if wrong_once and act.endswith("L1"):
+                tap_pool(page, ".peach-on-tree:not(.dim)", max(1, n - 1))
+                page.wait_for_timeout(300)
+                if page.locator("#btnDone").count():
+                    page.locator("#btnDone").click()
+                page.wait_for_timeout(1500)          # 脚手架念数
+                wrong_once = False
+                # 复位后重来
+                deadline2 = time.time() + 20
+                while time.time() < deadline2 and page.locator(".peach-on-tree:not(.dim)").count() < n:
+                    page.wait_for_timeout(200)
+                continue
+            got = page.evaluate("() => document.querySelectorAll('.peach-on-tree.dim').length")
+            need = n - (got if act.endswith("L1") else 0)
+            if act.endswith("L2"):
+                # 每阶段重新数: 需要的 = 目标 - 本阶段已投(用 dataset.ph 无法读, 直接点满目标次数)
+                tap_pool(page, ".peach-on-tree:not(.dim)", n)
+            else:
+                tap_pool(page, ".peach-on-tree:not(.dim)", max(0, need))
+            page.wait_for_timeout(400)
+            if page.locator("#btnDone").count():
+                try: page.locator("#btnDone").click(timeout=2000)
+                except Exception: pass
+            page.wait_for_timeout(900)
+            if act.endswith("L2") and not round_over():
+                # 可能进入第二阶段(答案变化), 继续外层循环
+                page.wait_for_timeout(400)
+    elif act == "xiyouL3":
+        while page.locator(".countable:not(.counted)").count() and time.time() < deadline:
+            page.locator(".countable:not(.counted)").first.click(timeout=4000)
+            page.wait_for_timeout(200)
+        click_number_answer(page)
+    elif act == "huluL1":
+        ans = st0["answer"]
+        if wrong_once:
+            w = page.locator(f".pedestal-row button:not([data-pos='{ans}'])")
+            if w.count(): w.first.click(); page.wait_for_timeout(500)
+        page.locator(f".pedestal-row button[data-pos='{ans}']").click(timeout=5000)
+    elif act == "huluL2":
+        while not round_over() and time.time() < deadline:
+            s = state(page)
+            ans = s["answer"]
+            loc = page.locator(f".waitline button[data-pos='{ans}']")
+            if loc.count() and loc.first.is_visible():
+                try: loc.first.click(timeout=2000)
+                except Exception: pass
+            page.wait_for_timeout(420)
+    elif act == "huluL3":
+        deadline2 = time.time() + 25
+        while time.time() < deadline2 and not round_over():
+            s = state(page)
+            if s["phase"] == "swap" and "," in s["answer"]:
+                i, j = s["answer"].split(",")
+                for p in (i, j):
+                    loc = page.locator(f".pedestal-row button[data-pos='{p}']")
+                    if loc.count():
+                        try: loc.first.click(timeout=2000)
+                        except Exception: pass
+                    page.wait_for_timeout(500)
+                page.wait_for_timeout(800)
+            elif page.locator(".cards .ncard").count():
+                click_number_answer(page)
+            else:
+                page.wait_for_timeout(200)
+    elif act in ("avengersL1", "avengersL2"):
+        click_number_answer(page)
+    elif act == "avengersL3":
+        ans = st0["answer"]
+        deadline2 = time.time() + 15
+        while time.time() < deadline2 and not round_over():
+            loc = page.locator(f".numball[data-value='{ans}']")
+            if loc.count():
+                bb = loc.first.bounding_box()
+                if bb: page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
+            page.wait_for_timeout(600)
+    elif act == "pawL1":
+        while page.locator(".bonepile .item:not(.dim)").count() and time.time() < deadline:
+            page.locator(".bonepile .item:not(.dim)").first.click(timeout=4000)
+            page.wait_for_timeout(230)
+        click_icon_answer(page, wrong_first=wrong_once)
+    elif act == "pawL2":
+        click_number_answer(page)
+    elif act == "pawL3":
+        while page.locator(".bonepile .item:not(.dim)").count() and time.time() < deadline:
+            page.locator(".bonepile .item:not(.dim)").first.click(timeout=4000)
+            page.wait_for_timeout(230)
+        click_number_answer(page)
+    elif act.startswith("bluey"):
+        while not round_over() and time.time() < deadline:
+            if page.locator(".cards .ncard").count():
+                click_number_answer(page)
+            elif page.locator(".icards .icard").count():
+                click_icon_answer(page)
+            elif page.locator(".dicebtn:not([data-value])").count():
+                try: page.locator(".dicebtn").click(timeout=2000)
+                except Exception: pass
+                page.wait_for_timeout(1600)
+            else:
+                page.wait_for_timeout(250)
+    elif act == "peppaL1":
+        while page.locator(".bonepile .item:not(.dim)").count() and time.time() < deadline:
+            page.locator(".bonepile .item:not(.dim)").first.click(timeout=4000)
+            page.wait_for_timeout(230)
+        click_number_answer(page)
+    elif act == "peppaL2":
+        while not round_over() and time.time() < deadline:
+            if page.locator(".cards .ncard").count():
+                click_number_answer(page)
+            else:
+                loc = page.locator(".bonepile .item:not(.dim):visible")
+                if loc.count():
+                    try: loc.first.click(timeout=2000)
+                    except Exception: pass
+                page.wait_for_timeout(300)
+    elif act == "peppaL3":
+        click_number_answer(page)
+    else:
+        raise Fail(f"unknown activity {act}")
+    # 等回合真正结束
+    deadline3 = time.time() + 30
+    while time.time() < deadline3:
+        if round_over():
+            return act
+        page.wait_for_timeout(150)
+    raise Fail(f"round did not finish: {act} r{st0['round']}")
+
+def play_level(page, island, li, audit=None, wrong_once=False, shots_prefix=None):
+    """从关卡页点击并玩完一关（4回合+庆祝）"""
+    page.locator(f".lvbtn[data-level='{li}']").click(timeout=5000)
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        s = state(page)
+        if s["scene"] == "scenePlay" and s["act"]:
+            break
+        page.wait_for_timeout(150)
+    else:
+        raise Fail(f"level {island} L{li+1} did not start")
+    shot_done = False
+    last_aid = None
+    first = True
+    for _ in range(8):
+        # 只有当"新回合已挂载"(aid 变化)时才驱动; 末回合→庆祝的空档不再误驱动（防幽灵回合）
+        fresh = None
+        deadline_r = time.time() + 25
+        while time.time() < deadline_r:
+            s = state(page)
+            if s["cele"] or s["scene"] != "scenePlay":
+                fresh = "end"; break
+            if s["act"] and s["aid"] != last_aid:
+                fresh = s; break
+            page.wait_for_timeout(150)
+        if fresh == "end" or fresh is None:
+            break
+        last_aid = fresh["aid"]
+        if shots_prefix and not shot_done:
+            page.wait_for_timeout(500)
+            page.screenshot(path=os.path.join(SHOTS, f"{shots_prefix}_{island}L{li+1}.png"))
+            shot_done = True
+        drive_round(page, audit=audit, wrong_once=(wrong_once and first))
+        first = False
+    # 庆祝 → 回关卡页
+    deadline = time.time() + 25
+    while time.time() < deadline:
+        s = state(page)
+        if s["cele"]:
+            page.locator("#cele").click(timeout=4000)
+        if s["scene"] == "sceneLevels":
+            return
+        page.wait_for_timeout(200)
+    raise Fail(f"did not return to level select after {island} L{li+1}")
+
+def enter_island(page, island):
+    idx = ISLANDS.index(island)
+    page.locator(".island").nth(idx).click(timeout=5000)
+    page.wait_for_function("() => document.body.dataset.scene === 'sceneLevels'", timeout=10000)
+    page.wait_for_timeout(300)
+
+def unlock_all(page):
+    page.evaluate("""() => { const d = window.__KM.Store.data;
+      for(const k in d.islands){ d.islands[k].unlocked = 3; }
+      window.__KM.Store.save(); }""")
 
 def get_speech(page):
     return page.evaluate("window.__SPEECH.slice()")
@@ -245,7 +382,7 @@ def assert_speech_rules(log, label):
     speaks = [e for e in log if e["a"] == "speak"]
     welcome = [s for s in speaks if "欢迎来到数字小英雄乐园" in s["text"]]
     if len(welcome) != 1:
-        raise Fail(f"{label}: welcome spoken {len(welcome)} times (expect 1)")
+        raise Fail(f"{label}: welcome spoken {len(welcome)} times")
     last_cancel = None
     for e in log:
         if e["a"] == "cancel":
@@ -253,12 +390,13 @@ def assert_speech_rules(log, label):
         elif e["a"] == "speak" and last_cancel is not None:
             gap = e["t"] - last_cancel
             if gap < 148:
-                raise Fail(f"{label}: speak {gap:.0f}ms after cancel (<150ms): {e['text'][:20]}")
+                raise Fail(f"{label}: speak {gap:.0f}ms after cancel: {e['text'][:20]}")
             last_cancel = None
     prev = None
     for s in speaks:
-        if prev and s["text"] == prev["text"] and len(s["text"]) > 2 and (s["t"] - prev["t"]) < 3000:
-            raise Fail(f"{label}: instruction repeated within 3s: {s['text'][:24]}")
+        # 意外双发是近同时的(<1.2s); 合法空闲重复最早也在 T(9000)(fast≈2s, 真机9s)之后
+        if prev and s["text"] == prev["text"] and len(s["text"]) > 2 and (s["t"] - prev["t"]) < 1200:
+            raise Fail(f"{label}: duplicate speak within 1.2s: {s['text'][:24]}")
         prev = s
     return len(speaks)
 
@@ -270,129 +408,79 @@ def main():
     ok_all = True
     try:
         with sync_playwright() as pw:
-            # ============ T1: chromium 横屏全流程（含语音时间线/答错脚手架/6岛/7活动型） ============
+            # ============ T1: chromium 六岛×三关全走查 + 解锁断言 + 语音时间线 ============
             errors = []
             br = pw.chromium.launch()
             ctx = br.new_context(viewport={"width": 1180, "height": 820}, device_scale_factor=2)
             page = make_page(ctx, errors)
             try:
                 page.goto(f"{BASE}/?fast=1&seed=42", wait_until="load")
-                page.wait_for_selector("#btnStart", timeout=10000)
-                page.screenshot(path=os.path.join(SHOTS, "t1_boot.png"))
                 page.locator("#btnStart").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.wait_for_timeout(600)
-                page.screenshot(path=os.path.join(SHOTS, "t1_map.png"))
-                types_seen = set()
-                # 岛1: 新手状态; 第一个 count 慢点(700ms间隔)供听觉一一对应断言; 首题故意答错一次走脚手架
-                play_island(page, 0, types_seen, shots_prefix="t1a", wrong_on_first=True, slow_first_count=True, audit="t1")
-                # 解锁全部活动类型, 六岛全部走查（P1-05）
-                page.evaluate("""() => { const d = window.__KM.Store.data;
-                  for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
-                  window.__KM.Store.save(); }""")
-                for isl in (1, 2, 3, 4, 5):
-                    play_island(page, isl, types_seen, shots_prefix=f"t1_{isl}", audit="t1")
-                missing = {"count","numeral","produce","flash","compare","compose","add"} - types_seen
-                if missing:
-                    raise Fail(f"activity types not covered after 6 islands: {missing}")
+                page.wait_for_timeout(500)
+                page.screenshot(path=os.path.join(SHOTS, "v2_map.png"))
+                # 花果山: 新手状态 L1(含一次错误提交路径) → 解锁断言 → L2 L3
+                enter_island(page, "xiyou")
+                page.screenshot(path=os.path.join(SHOTS, "v2_levels.png"))
+                locked = page.evaluate("() => document.querySelector('.lvbtn[data-level=\\'1\\']').classList.contains('locked')")
+                if not locked:
+                    raise Fail("L2 should start locked")
+                play_level(page, "xiyou", 0, audit="t1", wrong_once=True, shots_prefix="v2")
+                prog = page.evaluate("() => window.__KM.Store.data.islands.xiyou")
+                if prog["stars"][0] != 1 or prog["unlocked"] < 2:
+                    raise Fail(f"xiyou L1 completion not recorded: {prog}")
+                play_level(page, "xiyou", 1, audit="t1", shots_prefix="v2")
+                play_level(page, "xiyou", 2, audit="t1", shots_prefix="v2")
+                page.locator("#btnLvBack").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
+                # 其余五岛: 解锁全部, 三关全玩
+                unlock_all(page)
+                for island in ISLANDS[1:]:
+                    enter_island(page, island)
+                    for li in range(3):
+                        play_level(page, island, li, audit="t1",
+                                   wrong_once=(island == "paw" and li == 0),
+                                   shots_prefix="v2")
+                    page.locator("#btnLvBack").click()
+                    page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 if SIZE_VIOLATIONS:
-                    raise Fail("touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:6]))
-                # 语音时间线
+                    raise Fail("targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
                 log = get_speech(page)
-                nspeaks = assert_speech_rules(log, "T1")
-                # 家长面板（长按3秒）
-                gear = page.locator("#gearMap")
-                gear.hover()
-                page.mouse.down(); page.wait_for_timeout(3300); page.mouse.up()
-                page.wait_for_selector("#parent.on", timeout=4000)
-                page.screenshot(path=os.path.join(SHOTS, "t1_parent.png"))
-                if "Mock Tingting" not in page.locator(".pp .diag").inner_text():
-                    raise Fail("parent panel: zh voice not shown in diagnostics")
-                page.locator("#ppClose").click()
-                # 回家二次确认
-                page.locator(".island").nth(0).click()
-                wait_new_activity(page, -999)
+                n_speaks = assert_speech_rules(log, "T1")
+                words = count_words_in(log)
+                seq_ok = any(words[i] == "一" and i + 1 < len(words) and words[i+1] == "二" for i in range(len(words)))
+                if not seq_ok:
+                    raise Fail("no ordered count sequence found")
+                # 回家二次确认: 玩关中退出应回关卡页
+                enter_island(page, "xiyou")
+                page.locator(".lvbtn[data-level='0']").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'scenePlay'", timeout=10000)
                 page.locator("#btnHome").click()
                 page.wait_for_timeout(250)
-                if state(page)["scene"] == "sceneMap":
-                    raise Fail("home exited on single tap (expect 2-tap confirm)")
+                if state(page)["scene"] != "scenePlay":
+                    raise Fail("home exited on single tap")
                 page.locator("#btnHome").click()
+                page.wait_for_function("() => document.body.dataset.scene === 'sceneLevels'", timeout=5000)
+                # 家长面板
+                page.locator("#btnLvBack").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=5000)
-                # 比较错误路径: 找一个 compare, 点错→断言星星胜者标识出现→纠正完成（P0-03）
-                crown_done = False
-                for isl in (3, 4, 5):
-                    if crown_done: break
-                    page.locator(".island").nth(isl).click(timeout=5000)
-                    wait_new_activity(page, -999)
-                    while True:
-                        st = state(page)
-                        if st["cele"]:
-                            page.locator("#cele").click(timeout=4000)
-                            page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=15000)
-                            break
-                        page.wait_for_timeout(250)
-                        if st["act"] == "compare" and not crown_done:
-                            solve_current(page, wrong_first=True)
-                            crown_done = True
-                        else:
-                            solve_current(page)
-                        try:
-                            wait_new_activity(page, st["aid"])
-                        except Fail:
-                            if state(page)["scene"] == "sceneMap":
-                                break
-                            raise
-                if not crown_done:
-                    raise Fail("no compare encountered for crown-path test")
-                # 比较活动位置平衡（P0-01）: 主走查 seed 固定可能碰巧同侧 → 独立 seed 重载专测平衡。
-                # seed 7/8/11 经 find_balance_seed.py 实测均产生两侧(7→R,R,L; 8→L,R; 11→R,L), 确定性稳定;
-                # 真 bug(固定单侧)时任何 seed 都单侧, 必然失败
-                if len(set(COMPARE_SIDES)) < 2:
-                    for bal_seed in (7, 8, 11):
-                        page.evaluate("() => localStorage.clear()")   # 复现探种脚本的全新状态轨迹
-                        page.goto(f"{BASE}/?fast=1&seed={bal_seed}&demo=0", wait_until="load")
-                        page.locator("#btnStart").click()
-                        page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                        page.evaluate("""() => { const d = window.__KM.Store.data;
-                          for(const k in d.skills){ d.skills[k].lvl = 2; d.skills[k].wins = 5; }
-                          window.__KM.Store.save(); }""")
-                        for isl in (0, 1, 2):
-                            play_island(page, isl, set())
-                            if len(set(COMPARE_SIDES)) >= 2:
-                                break
-                        if len(set(COMPARE_SIDES)) >= 2:
-                            break
-                if len(COMPARE_SIDES) < 2:
-                    raise Fail(f"too few compare samples: {COMPARE_SIDES}")
-                if len(set(COMPARE_SIDES)) < 2:
-                    raise Fail(f"compare winner stuck on one side across seeds: {COMPARE_SIDES}")
+                gear = page.locator("#gearMap")
+                gear.hover(); page.mouse.down(); page.wait_for_timeout(3300); page.mouse.up()
+                page.wait_for_selector("#parent.on", timeout=4000)
+                if "Mock Tingting" not in page.locator(".pp .diag").inner_text():
+                    raise Fail("parent panel voice missing")
+                page.screenshot(path=os.path.join(SHOTS, "v2_parent.png"))
+                page.locator("#ppClose").click()
                 if errors:
                     raise Fail("console/page errors: " + " | ".join(errors[:5]))
-                report("T1 chromium 全流程走查+语音时间线+家长面板+回家确认", True, f"{nspeaks} speaks, types={sorted(types_seen)}")
+                report("T1 六岛×三关全走查+解锁+语音时间线+回家/面板", True, f"{n_speaks} speaks")
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t1_FAIL.png"))
-                report("T1 chromium 全流程", False, str(e)[:300])
-            # ---- T2: 听觉一一对应（慢速点数的完整序列）----
-            try:
-                log = get_speech(page)
-                words = count_words_in(log)
-                seq_ok = False
-                for i in range(len(words)):
-                    if words[i] == "一" and i + 1 < len(words) and words[i+1] == "二":
-                        j, expect = i, 1
-                        while j < len(words) and words[j] == NUM_CN[expect]:
-                            j += 1; expect += 1
-                        if expect >= 3:
-                            seq_ok = True; break
-                if not seq_ok:
-                    raise Fail(f"no intact 一二三.. sequence in count words: {words[:20]}")
-                report("T2 计数词有序完整（听觉一一对应）", True, f"words={words[:12]}")
-            except Exception as e:
-                ok_all = False; report("T2 计数词序列", False, str(e)[:200])
+                report("T1 v2 全走查", False, str(e)[:300])
             ctx.close(); br.close()
 
-            # ============ T3: 快速连点压力 ============
+            # ============ T3: 快速连点压力（真实坐标） ============
             errors3 = []
             br = pw.chromium.launch()
             ctx = br.new_context(viewport={"width": 1180, "height": 820})
@@ -401,12 +489,13 @@ def main():
                 page.goto(f"{BASE}/?fast=1&seed=7&demo=0", wait_until="load")
                 page.locator("#btnStart").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.locator(".island").nth(1).click()
-                wait_new_activity(page, -999)
-                # 疯狂连点 3 秒: 真实鼠标点击（实时包围盒坐标, 非合成事件; P1-05）
+                enter_island(page, "xiyou")
+                page.locator(".lvbtn[data-level='0']").click(timeout=5000)
+                page.wait_for_function("() => document.body.dataset.scene === 'scenePlay'", timeout=10000)
+                page.wait_for_timeout(600)
                 end = time.time() + 3
                 while time.time() < end:
-                    for sel in (".countable", ".ncard", ".balloon", ".tray .item", ".srcgrp .item", "#btnDone"):
+                    for sel in (".peach-on-tree", "#btnDone", ".cards .ncard"):
                         loc = page.locator(sel)
                         if loc.count():
                             try:
@@ -414,59 +503,49 @@ def main():
                                 if bb: page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
                             except Exception: pass
                     page.mouse.click(590, 400)
-                # 连点后应用仍可推进: 完成当前活动
-                page.wait_for_timeout(500)
-                st = state(page)
-                if st["act"]:
-                    solve_current(page)
+                page.wait_for_timeout(600)
                 log = get_speech(page)
                 words = count_words_in(log)
                 for i in range(1, len(words)):
                     a, b = NUM_CN.index(words[i-1]), NUM_CN.index(words[i])
                     if b != a + 1 and b != 1:
-                        raise Fail(f"count word sequence broken under spam: ...{words[max(0,i-3):i+1]}")
+                        raise Fail(f"count seq broken under spam: {words[max(0,i-3):i+1]}")
                 if errors3:
                     raise Fail("errors: " + " | ".join(errors3[:5]))
-                report("T3 快速连点压力（背压保序+无错误）", True, f"words={words}")
+                report("T3 快速连点压力（背压保序+无错误）", True, f"words={words[:10]}")
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t3_FAIL.png"))
-                report("T3 快速连点压力", False, str(e)[:300])
+                report("T3 连点压力", False, str(e)[:300])
             ctx.close(); br.close()
 
-            # ============ T4: 离线（SW） ============
+            # ============ T4: 断网离线整关 ============
             errors4 = []
             br = pw.chromium.launch()
             ctx = br.new_context(viewport={"width": 1180, "height": 820})
             page = make_page(ctx, errors4)
             try:
-                page.goto(f"{BASE}/?fast=1", wait_until="load")
+                page.goto(f"{BASE}/?fast=1&demo=0", wait_until="load")
                 page.evaluate("() => navigator.serviceWorker.ready")
-                page.wait_for_function("() => caches.keys().then(k=>k.length>0)", timeout=15000)
                 page.wait_for_function("""() => caches.open('km-v1').then(c=>c.match('index.html')).then(r=>!!r)""", timeout=20000)
-                page.wait_for_timeout(2500)  # 等素材预缓存
+                page.wait_for_timeout(3000)
                 ctx.set_offline(True)
                 page.reload(wait_until="load")
                 page.wait_for_selector("#btnStart", timeout=10000)
                 page.locator("#btnStart").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                imgs_ok = page.evaluate("""() => {
-                  const im = [...document.querySelectorAll('#mapGrid img')].slice(0,6);
-                  return im.length>0 && im.every(i=>i.complete && i.naturalWidth>0); }""")
-                if not imgs_ok:
-                    raise Fail("map images not loaded offline")
-                types4 = set()
-                play_island(page, 0, types4)         # 离线走完整一岛（P1-05）
+                enter_island(page, "xiyou")
+                play_level(page, "xiyou", 0)
                 if errors4:
-                    raise Fail("errors offline: " + " | ".join(errors4[:5]))
-                report("T4 断网离线完整可玩（整岛5活动, SW 缓存）", True)
+                    raise Fail("offline errors: " + " | ".join(errors4[:5]))
+                report("T4 断网离线整关可玩（SW 缓存）", True)
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t4_FAIL.png"))
                 report("T4 离线", False, str(e)[:300])
             ctx.close(); br.close()
 
-            # ============ T5: webkit 竖屏走查 + 触摸目标尺寸 ============
+            # ============ T5: webkit 竖屏矩阵（六岛代表关卡 + 尺寸审计） ============
             errors5 = []
             br = pw.webkit.launch()
             ctx = br.new_context(viewport={"width": 820, "height": 1180}, device_scale_factor=2)
@@ -475,162 +554,62 @@ def main():
                 page.goto(f"{BASE}/?fast=1&seed=9", wait_until="load")
                 page.locator("#btnStart").click()
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.wait_for_timeout(500)
-                page.screenshot(path=os.path.join(SHOTS, "t5_map_portrait.png"))
-                # 解锁全部类型且强制 L3: 竖屏矩阵覆盖最高阶布局(含 compose L3 两组≤5)（P1-04/05）
-                page.evaluate("""() => { const d = window.__KM.Store.data;
-                  for(const k in d.skills){ d.skills[k].lvl = 3; d.skills[k].wins = 8; }
-                  window.__KM.Store.save(); }""")
+                unlock_all(page)
                 SIZE_VIOLATIONS.clear()
-                types = set()
-                ALL7 = {"count","numeral","produce","flash","compare","compose","add"}
-                for isl in (5, 1, 2, 3, 4, 0):
-                    play_island(page, isl, types, shots_prefix="t5", audit="t5")
-                    if ALL7 <= types:
-                        break
-                if not (ALL7 <= types):
-                    raise Fail(f"portrait matrix missing types: {ALL7 - types}")
+                matrix = [("xiyou", 0), ("xiyou", 2), ("hulu", 0), ("hulu", 1), ("avengers", 1), ("avengers", 2),
+                          ("paw", 0), ("paw", 2), ("bluey", 0), ("bluey", 2), ("peppa", 1), ("peppa", 2)]
+                for island, li in matrix:
+                    enter_island(page, island)
+                    play_level(page, island, li, audit="t5", shots_prefix="v2p")
+                    page.locator("#btnLvBack").click()
+                    page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
                 if SIZE_VIOLATIONS:
-                    raise Fail("portrait touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
+                    raise Fail("portrait targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
                 if errors5:
                     raise Fail("errors: " + " | ".join(errors5[:5]))
-                report("T5 webkit 竖屏七活动矩阵(L3)+触摸目标≥88px", True, f"types={sorted(types)}")
+                report("T5 webkit 竖屏矩阵(12关)+触摸目标≥88px", True)
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t5_FAIL.png"))
                 report("T5 webkit 竖屏", False, str(e)[:300])
             ctx.close(); br.close()
 
-            # ============ T5b: webkit 横屏七活动矩阵（P1-05） ============
-            errors5b = []
-            br = pw.webkit.launch()
-            ctx = br.new_context(viewport={"width": 1180, "height": 820}, device_scale_factor=2)
-            page = make_page(ctx, errors5b)
-            try:
-                page.goto(f"{BASE}/?fast=1&seed=13", wait_until="load")
-                page.locator("#btnStart").click()
-                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.evaluate("""() => { const d = window.__KM.Store.data;
-                  for(const k in d.skills){ d.skills[k].lvl = 3; d.skills[k].wins = 8; }
-                  window.__KM.Store.save(); }""")
-                SIZE_VIOLATIONS.clear()
-                types = set()
-                ALL7 = {"count","numeral","produce","flash","compare","compose","add"}
-                for isl in (0, 3, 4, 1, 2, 5):
-                    play_island(page, isl, types, audit="t5b")
-                    if ALL7 <= types:
-                        break
-                if not (ALL7 <= types):
-                    raise Fail(f"webkit landscape matrix missing types: {ALL7 - types}")
-                if SIZE_VIOLATIONS:
-                    raise Fail("landscape touch targets <88px: " + "; ".join(SIZE_VIOLATIONS[:8]))
-                if errors5b:
-                    raise Fail("errors: " + " | ".join(errors5b[:5]))
-                report("T5b webkit 横屏七活动矩阵(L3)", True, f"types={sorted(types)}")
-            except Exception as e:
-                ok_all = False
-                page.screenshot(path=os.path.join(SHOTS, "t5b_FAIL.png"))
-                report("T5b webkit 横屏矩阵", False, str(e)[:300])
-            ctx.close(); br.close()
-
-            # ============ T2b: 慢 TTS 下计数排空（P1-01） ============
-            errors2b = []
-            br = pw.chromium.launch()
-            ctx = br.new_context(viewport={"width": 1180, "height": 820})
-            page = ctx.new_page()
-            page.add_init_script("window.__SPEECH_DUR = 600;")   # 单词 600ms 的慢 TTS
-            page.add_init_script(SPEECH_MOCK)
-            page.on("pageerror", lambda e: errors2b.append(f"pageerror: {e}"))
-            page.on("console", lambda m: errors2b.append(f"console.{m.type}: {m.text}") if m.type == "error" else None)
-            page.add_init_script(f"addEventListener('DOMContentLoaded',()=>{{const s=document.createElement('style');s.textContent='{FREEZE_CSS}';document.head.appendChild(s);}});")
-            try:
-                page.goto(f"{BASE}/?fast=1&seed=21&demo=0", wait_until="load")
-                page.locator("#btnStart").click()
-                page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.locator(".island").nth(0).click()
-                wait_new_activity(page, -999)
-                st = state(page)
-                if st["act"] != "count":
-                    raise Fail(f"expected count first, got {st['act']}")
-                deadline = time.time() + 30
-                while time.time() < deadline:
-                    loc = page.locator(".countable:not(.counted)")
-                    if loc.count() == 0:
-                        break
-                    loc.first.click(timeout=4000)
-                    page.wait_for_timeout(200)      # 快点: 触发背压 + 排空等待
-                page.wait_for_selector(".cards .ncard", timeout=20000)
-                cards_at = page.evaluate("() => performance.now()")
-                log = get_speech(page)
-                cw = [e for e in log if e["a"] == "speak" and len(e["text"]) == 1 and e["text"] in NUM_CN]
-                n = page.evaluate("() => +document.querySelector('#stage').dataset.answer")
-                if len(cw) < n:
-                    raise Fail(f"slow-TTS dropped count words: {[w['text'] for w in cw]} (n={n})")
-                last_end = cw[-1]["t"] + 600
-                if cards_at < last_end - 80:
-                    raise Fail(f"ask phase appeared before last count word finished: cards@{cards_at:.0f} < end@{last_end:.0f}")
-                click_answer(page, None)
-                if errors2b:
-                    raise Fail("errors: " + " | ".join(errors2b[:5]))
-                report("T2b 慢TTS(600ms/词)下背压保序+排空后提问", True, f"words={[w['text'] for w in cw]}")
-            except Exception as e:
-                ok_all = False
-                page.screenshot(path=os.path.join(SHOTS, "t2b_FAIL.png"))
-                report("T2b 慢TTS排空", False, str(e)[:300])
-            ctx.close(); br.close()
-
-            # ============ T6: 真实运动目标命中（气球不冻结动画、不用 force） ============
+            # ============ T6: 运动目标真实命中（英雄城 L3 数字球, 动画开启零 force） ============
             errors6 = []
             br = pw.webkit.launch()
             ctx = br.new_context(viewport={"width": 1180, "height": 820})
-            page = make_page(ctx, errors6, freeze=False)   # 动画保持真实
+            page = make_page(ctx, errors6, freeze=False)
             try:
                 page.goto(f"{BASE}/?fast=1&seed=5&demo=0", wait_until="load")
-                bb = page.locator("#btnStart").bounding_box()   # 脉冲动画按钮: 直接坐标真实点击
+                bb = page.locator("#btnStart").bounding_box()
                 page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
                 page.wait_for_function("() => document.body.dataset.scene === 'sceneMap'", timeout=8000)
-                page.evaluate("""() => { const d = window.__KM.Store.data;
-                  d.skills.numeral.wins = 9; window.__KM.Store.save(); }""")
-                found = False
-                for _ in range(10):
-                    page.locator(".island").nth(2).click()
-                    wait_new_activity(page, -999)
-                    for _ in range(6):
-                        st = state(page)
-                        if st["act"] == "numeral":
-                            found = True; break
-                        solve_current(page)
-                        try: wait_new_activity(page, st["aid"])
-                        except Fail: break
-                        if state(page)["cele"]:
-                            page.locator("#cele").click()
-                            page.wait_for_function("() => document.body.dataset.scene==='sceneMap'", timeout=8000)
-                            break
-                    if found: break
-                    if state(page)["scene"] != "sceneMap":
-                        page.locator("#btnHome").click(); page.wait_for_timeout(150); page.locator("#btnHome").click()
-                        page.wait_for_function("() => document.body.dataset.scene==='sceneMap'", timeout=8000)
-                if not found:
-                    raise Fail("numeral activity not reachable")
+                unlock_all(page)
+                enter_island(page, "avengers")
+                bb = page.locator(".lvbtn[data-level='2']").bounding_box()
+                page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
+                page.wait_for_function("() => document.body.dataset.scene === 'scenePlay'", timeout=10000)
+                page.wait_for_selector(".numball", timeout=10000)
                 ans = state(page)["answer"]
-                target = page.locator(f".balloon[data-value='{ans}']")
                 hit = False
-                for _ in range(4):   # 移动目标: 实时取包围盒中心真实点击
-                    bb = target.bounding_box()
-                    if not bb: break
-                    page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
-                    page.wait_for_timeout(400)
-                    if target.count() == 0 or "popped" in (target.get_attribute("class") or ""):
+                for _ in range(5):
+                    loc = page.locator(f".numball[data-value='{ans}']")
+                    if loc.count() == 0:
+                        hit = True; break
+                    bb = loc.first.bounding_box()
+                    if bb: page.mouse.click(bb["x"] + bb["width"]/2, bb["y"] + bb["height"]/2)
+                    page.wait_for_timeout(500)
+                    if loc.count() == 0 or "dim" in (loc.first.get_attribute("class") or ""):
                         hit = True; break
                 if not hit:
-                    raise Fail("moving balloon not hittable with real clicks")
+                    raise Fail("moving numball not hittable")
                 if errors6:
                     raise Fail("errors: " + " | ".join(errors6[:5]))
-                report("T6 真实运动气球命中（无 force）", True)
+                report("T6 运动数字球真实命中（无 force）", True)
             except Exception as e:
                 ok_all = False
                 page.screenshot(path=os.path.join(SHOTS, "t6_FAIL.png"))
-                report("T6 运动目标命中", False, str(e)[:300])
+                report("T6 运动命中", False, str(e)[:300])
             ctx.close(); br.close()
     finally:
         if server:

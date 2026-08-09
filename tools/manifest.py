@@ -78,6 +78,11 @@ ITEMS = [
     ("ball",   "a cute cartoon tennis ball — bright yellow-green, white curved seam lines, glossy highlight"),
     ("cookie", "a cute cartoon round chocolate-chip cookie — golden-brown, scattered dark chocolate chips, soft glossy highlight"),
     ("apple",  "a cute cartoon red apple — bright glossy red, small brown stem, one green leaf"),
+    ("basket", "a cute cartoon woven bamboo basket — warm golden-tan, wide open oval top, empty inside, sturdy arched handle"),
+    ("web",    "a cute cartoon circular orb spider web — soft silver-grey silk lines with gentle glow, symmetrical spokes and rings"),
+    ("puddle", "a cute cartoon muddy brown puddle — top-down slight angle, oval splashy shape, small mud droplets around the edge"),
+    ("tree",   "a big cute cartoon peach tree — lush round fluffy green canopy with tiny pink blossoms, sturdy brown trunk, no fruit"),
+    ("bowl",   "a cute cartoon glossy red dog food bowl — front slight angle, empty, plain"),
 ]
 
 ISLANDS = [
